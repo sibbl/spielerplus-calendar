@@ -1,0 +1,13 @@
+.git
+.github
+.playwright-mcp
+.agents
+.cursor
+node_modules
+.env
+.env.*
+config.json
+cache
+dist
+coverage
+.DS_Store

@@ -1,0 +1,22 @@
+{
+  "name": "spielerplus-calendar",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "bun run index.ts",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "^25.5.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "cheerio": "^1.2.0",
+    "cron": "^4.4.0",
+    "ical-generator": "^10.1.0"
+  }
+}

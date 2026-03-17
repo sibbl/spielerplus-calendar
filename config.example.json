@@ -1,0 +1,26 @@
+{
+  "spielerplus": {
+    "email": "your-email@example.com",
+    "password": "your-password",
+    "teamId": "your-team-id"
+  },
+  "server": {
+    "port": 3000
+  },
+  "schedule": {
+    "cron": "0 */15 * * * *"
+  },
+  "cache": {
+    "file": "./cache/events.json"
+  },
+  "filters": [
+    {
+      "path": "/training.ics",
+      "titleRegex": "Training"
+    },
+    {
+      "path": "/games.ics",
+      "titleRegex": "(?!Training)"
+    }
+  ]
+}

@@ -55,6 +55,7 @@ const testConfig: Config = {
   server: { port: 0 },
   schedule: { cron: "0 0 * * * *" },
   cache: { file: "/tmp/spielerplus-calendar-test-cache.json" },
+  calendar: { startMode: "start" },
   filters: [
     { path: "/training.ics", titleRegex: "Training" },
     { path: "/games.ics", titleRegex: "spiel" },
@@ -88,6 +89,14 @@ describe("server endpoints", () => {
     expect(body).toContain("BEGIN:VCALENDAR");
     expect(body).toContain("Training");
     expect(body).toContain("Phantomkicker");
+  });
+
+  test("GET /calendar.ics?start=meet uses meet time", async () => {
+    const res = await fetch(`http://localhost:${server.port}/calendar.ics?start=meet`);
+    const body = await res.text();
+
+    expect(body).toContain("DTSTART:20260415T190000");
+    expect(body).not.toContain("DTSTART:20260415T191500");
   });
 
   test("GET /training.ics returns only training events", async () => {
@@ -141,12 +150,27 @@ describe("server endpoints", () => {
     expect(body).toContain('id="android-link"');
     expect(body).toContain('id="google-link"');
     expect(body).toContain('id="outlook-link"');
+    expect(body).toContain('name="start-mode"');
+    expect(body).toContain('value="start"');
+    expect(body).toContain('value="meet"');
+    expect(body).toContain('data-default-start-mode="start"');
+    expect(body).toContain('data-selected-start-mode="start"');
     expect(body).toContain(`href="webcal://localhost:${server.port}/calendar.ics"`);
     expect(body).toContain(
       `https://www.google.com/calendar/render?cid=${encodeURIComponent(
         `webcal://localhost:${server.port}/calendar.ics`,
       )}`,
     );
+  });
+
+  test("GET /?start=meet preselects Treff and keeps the override in generated links", async () => {
+    const res = await fetch(`http://localhost:${server.port}/?start=meet`);
+    const body = await res.text();
+
+    expect(body).toContain('data-default-start-mode="start"');
+    expect(body).toContain('data-selected-start-mode="meet"');
+    expect(body).toContain(`href="http://localhost:${server.port}/calendar.ics?start=meet"`);
+    expect(body).toContain(`href="webcal://localhost:${server.port}/calendar.ics?start=meet"`);
   });
 
   test("GET / respects forwarded subpath on the landing page", async () => {

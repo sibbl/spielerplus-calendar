@@ -43,6 +43,7 @@ describe("loadConfig", () => {
     const origPort = process.env["PORT"];
     const origCron = process.env["SCHEDULE_CRON"];
     const origCacheFile = process.env["CACHE_FILE"];
+    const origStartMode = process.env["ICAL_START_MODE"];
 
     process.env["SPIELERPLUS_EMAIL"] = "test@example.com";
     process.env["SPIELERPLUS_PASSWORD"] = mockSecretValue;
@@ -50,6 +51,7 @@ describe("loadConfig", () => {
     process.env["PORT"] = "4000";
     process.env["SCHEDULE_CRON"] = "0 0 * * * *";
     process.env["CACHE_FILE"] = "/tmp/cache/events.json";
+    process.env["ICAL_START_MODE"] = "meet";
     process.env["CONFIG_FILE"] = "/tmp/nonexistent-config.json";
 
     try {
@@ -60,6 +62,7 @@ describe("loadConfig", () => {
       expect(config.server.port).toBe(4000);
       expect(config.schedule.cron).toBe("0 0 * * * *");
       expect(config.cache.file).toBe("/tmp/cache/events.json");
+      expect(config.calendar.startMode).toBe("meet");
     } finally {
       restoreEnv("SPIELERPLUS_EMAIL", origEmail);
       restoreEnv("SPIELERPLUS_PASSWORD", origPassword);
@@ -67,6 +70,7 @@ describe("loadConfig", () => {
       restoreEnv("PORT", origPort);
       restoreEnv("SCHEDULE_CRON", origCron);
       restoreEnv("CACHE_FILE", origCacheFile);
+      restoreEnv("ICAL_START_MODE", origStartMode);
       delete process.env["CONFIG_FILE"];
     }
   });

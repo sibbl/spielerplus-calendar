@@ -175,12 +175,10 @@ async function fetchEventAddress(jar: CookieJar, url: string): Promise<string | 
   const html = await res.text();
   const $ = cheerio.load(html);
 
-  // Address is in a link containing h4 "Adresse"
   const addressHeading = $("h4").filter((_i, el) => $(el).text().trim() === "Adresse");
   if (addressHeading.length === 0) return null;
 
   const container = addressHeading.parent();
-  // Get all text content except the heading itself
   const addressText = container
     .contents()
     .filter((_i, el) => el !== addressHeading[0])
@@ -188,6 +186,63 @@ async function fetchEventAddress(jar: CookieJar, url: string): Promise<string | 
     .trim();
 
   return addressText || null;
+}
+
+async function loadEventsBatch(
+  jar: CookieJar,
+  offset: number,
+  options: { old?: boolean } = {},
+): Promise<{ html: string; count: number }> {
+  const formData = new URLSearchParams();
+  formData.set("offset", String(offset));
+  if (options.old) {
+    formData.set("old", "true");
+  }
+
+  const response = await fetchWithCookies(jar, `${BASE_URL}/events/ajaxgetevents`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: formData.toString(),
+  });
+
+  return (await response.json()) as {
+    html: string;
+    count: number;
+  };
+}
+
+function inferEventYears(events: CalendarEvent[], referenceDate: Date): CalendarEvent[] {
+  const referenceTime = referenceDate.getTime();
+  const referenceYear = referenceDate.getFullYear();
+  let previousTimestamp = Number.NEGATIVE_INFINITY;
+
+  return events.map((event) => {
+    const [, monthPart, dayPart] = event.date.split("-");
+    const month = Number.parseInt(monthPart ?? "1", 10);
+    const day = Number.parseInt(dayPart ?? "1", 10);
+
+    const bestCandidate = [referenceYear - 1, referenceYear, referenceYear + 1, referenceYear + 2]
+      .map((year) => {
+        const candidateDate = new Date(Date.UTC(year, month - 1, day));
+        return {
+          year,
+          timestamp: candidateDate.getTime(),
+          distance: Math.abs(candidateDate.getTime() - referenceTime),
+        };
+      })
+      .filter((candidate) => candidate.timestamp >= previousTimestamp)
+      .sort((left, right) => left.distance - right.distance)[0];
+
+    if (!bestCandidate) {
+      return event;
+    }
+
+    previousTimestamp = bestCandidate.timestamp;
+    return {
+      ...event,
+      date: `${bestCandidate.year}-${monthPart}-${dayPart}`,
+    };
+  });
 }
 
 export async function scrapeEvents(
@@ -207,7 +262,8 @@ export async function scrapeEvents(
   const eventsPageRes = await fetchWithCookies(jar, `${BASE_URL}/events`);
   const eventsPageHtml = await eventsPageRes.text();
 
-  const currentYear = new Date().getFullYear();
+  const now = new Date();
+  const currentYear = now.getFullYear();
   const allPartialEvents: Omit<CalendarEvent, "address">[] = [];
 
   // Parse initial events
@@ -220,19 +276,7 @@ export async function scrapeEvents(
 
   while (hasMore) {
     console.log(`[scraper] Loading more events (offset=${offset})...`);
-    const formData = new URLSearchParams();
-    formData.set("offset", String(offset));
-
-    const moreRes = await fetchWithCookies(jar, `${BASE_URL}/events/ajaxgetevents`, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: formData.toString(),
-    });
-
-    const moreData = (await moreRes.json()) as {
-      html: string;
-      count: number;
-    };
+    const moreData = await loadEventsBatch(jar, offset);
     const moreEvents = parseEventsFromHtml(moreData.html, currentYear);
     allPartialEvents.push(...moreEvents);
 
@@ -240,9 +284,22 @@ export async function scrapeEvents(
     hasMore = moreData.count >= 5;
   }
 
+  let oldOffset = 0;
+  let hasOlder = true;
+
+  while (hasOlder) {
+    console.log(`[scraper] Loading older events (offset=${oldOffset})...`);
+    const olderData = await loadEventsBatch(jar, oldOffset, { old: true });
+    const olderEvents = parseEventsFromHtml(olderData.html, currentYear);
+    allPartialEvents.unshift(...olderEvents);
+
+    oldOffset += olderData.count;
+    hasOlder = olderData.count >= 5;
+  }
+
   console.log(`[scraper] Found ${allPartialEvents.length} events. Fetching addresses...`);
 
-  // Fetch addresses for each event (in batches to avoid overloading)
+  // Fetch addresses for each event (in batches to avoid overloading).
   const BATCH_SIZE = 5;
   const events: CalendarEvent[] = [];
 
@@ -257,26 +314,11 @@ export async function scrapeEvents(
     events.push(...results);
   }
 
-  // Handle year rollover: if we see events where month goes from 12 to 1,
-  // bump the year for those events
-  let lastMonth = 0;
-  let yearAdjust = 0;
-  for (const event of events) {
-    const [, monthPart] = event.date.split("-");
-    const month = Number.parseInt(monthPart ?? "0", 10);
-    if (lastMonth > 6 && month < 6) {
-      yearAdjust++;
-    }
-    if (yearAdjust > 0) {
-      const parts = event.date.split("-");
-      event.date = `${currentYear + yearAdjust}-${parts[1]}-${parts[2]}`;
-    }
-    lastMonth = month;
-  }
+  const normalizedEvents = inferEventYears(events, now);
 
-  console.log(`[scraper] Done. ${events.length} events with addresses.`);
-  return events;
+  console.log(`[scraper] Done. ${normalizedEvents.length} events with addresses.`);
+  return normalizedEvents;
 }
 
 // Export for testing
-export { parseEventsFromHtml, fetchEventAddress, createCookieJar };
+export { parseEventsFromHtml, fetchEventAddress, createCookieJar, inferEventYears };

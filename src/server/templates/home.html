@@ -1,5 +1,10 @@
 <!doctype html>
-<html lang="en" data-root-url="__ROOT_URL__">
+<html
+  lang="en"
+  data-root-url="__ROOT_URL__"
+  data-default-start-mode="__DEFAULT_START_MODE__"
+  data-selected-start-mode="__SELECTED_START_MODE__"
+>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -47,6 +52,32 @@
               >
                 Open full calendar
               </a>
+            </div>
+            <div
+              class="mt-6 inline-flex rounded-full border border-slate-200 bg-white/80 p-1 shadow-sm"
+            >
+              <label
+                class="inline-flex cursor-pointer items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-slate-700 transition hover:text-slate-950"
+              >
+                <input
+                  type="radio"
+                  name="start-mode"
+                  value="start"
+                  class="h-4 w-4 border-slate-300 text-sky-600 focus:ring-sky-500"
+                />
+                Beginn
+              </label>
+              <label
+                class="inline-flex cursor-pointer items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-slate-700 transition hover:text-slate-950"
+              >
+                <input
+                  type="radio"
+                  name="start-mode"
+                  value="meet"
+                  class="h-4 w-4 border-slate-300 text-sky-600 focus:ring-sky-500"
+                />
+                Treff
+              </label>
             </div>
           </div>
           <div
@@ -121,8 +152,12 @@
 
     <script>
       const rootUrl = new URL(document.documentElement.dataset.rootUrl);
+      const defaultStartMode = document.documentElement.dataset.defaultStartMode || "start";
+      const selectedStartMode =
+        document.documentElement.dataset.selectedStartMode || defaultStartMode;
       const basePath = rootUrl.pathname === "/" ? "" : rootUrl.pathname.replace(/\/$/, "");
       const checkboxes = Array.from(document.querySelectorAll('input[name="filters"]'));
+      const startModeInputs = Array.from(document.querySelectorAll('input[name="start-mode"]'));
       const urlEl = document.getElementById("generated-url");
       const linkEl = document.getElementById("subscribe-link");
       const appleLinkEl = document.getElementById("apple-link");
@@ -132,9 +167,18 @@
       const copyButton = document.getElementById("copy-button");
       const copyStatus = document.getElementById("copy-status");
 
-      function buildFeedUrl(tokens) {
+      function getSelectedStartMode() {
+        const selectedInput = startModeInputs.find((input) => input.checked);
+        return selectedInput ? selectedInput.value : defaultStartMode;
+      }
+
+      function buildFeedUrl(tokens, startMode) {
         const suffix = tokens.length ? "/" + tokens.join("+") + ".ics" : "/calendar.ics";
-        return new URL(basePath + suffix, rootUrl.origin).toString();
+        const feedUrl = new URL(basePath + suffix, rootUrl.origin);
+        if (startMode !== defaultStartMode) {
+          feedUrl.searchParams.set("start", startMode);
+        }
+        return feedUrl.toString();
       }
 
       function buildWebcalUrl(url) {
@@ -151,7 +195,8 @@
         const selectedTokens = checkboxes
           .filter((checkbox) => checkbox.checked)
           .map((checkbox) => checkbox.value);
-        const nextUrl = buildFeedUrl(selectedTokens);
+        const selectedStartMode = getSelectedStartMode();
+        const nextUrl = buildFeedUrl(selectedTokens, selectedStartMode);
         const nextWebcalUrl = buildWebcalUrl(nextUrl);
         const nextGoogleUrl = buildGoogleCalendarUrl(nextUrl);
         urlEl.textContent = nextUrl;
@@ -164,6 +209,11 @@
 
       for (const checkbox of checkboxes) {
         checkbox.addEventListener("change", updateGeneratedUrl);
+      }
+
+      for (const input of startModeInputs) {
+        input.checked = input.value === selectedStartMode;
+        input.addEventListener("change", updateGeneratedUrl);
       }
 
       copyButton.addEventListener("click", async () => {

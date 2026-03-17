@@ -23,6 +23,9 @@ export interface Config {
   cache: {
     file: string;
   };
+  calendar: {
+    startMode: "start" | "meet";
+  };
   filters: FilteredEndpoint[];
 }
 
@@ -45,6 +48,8 @@ export function loadConfig(): Config {
     process.env["CACHE_FILE"] ||
     jsonConfig?.cache?.file ||
     join(process.cwd(), "cache", "events.json");
+  const startModeRaw = process.env["ICAL_START_MODE"] || jsonConfig?.calendar?.startMode || "start";
+  const startMode = startModeRaw === "meet" ? "meet" : "start";
 
   let filters: FilteredEndpoint[] = jsonConfig?.filters || [];
   if (process.env["FILTERS"]) {
@@ -62,6 +67,7 @@ export function loadConfig(): Config {
     server: { port },
     schedule: { cron },
     cache: { file: cacheFile },
+    calendar: { startMode },
     filters,
   };
 }

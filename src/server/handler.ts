@@ -5,6 +5,21 @@ import { combineFilteredEvents, createServerFilters, filterEvents } from "./filt
 import { renderHomePage } from "./pages/home.js";
 import { getPublicRequestUrl } from "./proxy.js";
 
+function resolveStartMode(
+  requestedMode: string | null,
+  defaultMode: "start" | "meet",
+): "start" | "meet" {
+  if (requestedMode === "meet" || requestedMode === "treff") {
+    return "meet";
+  }
+
+  if (requestedMode === "start" || requestedMode === "real") {
+    return "start";
+  }
+
+  return defaultMode;
+}
+
 function createCalendarResponse(body: string, fileName: string): Response {
   return new Response(body, {
     headers: {
@@ -23,6 +38,7 @@ export function createServerHandler(config: Config): (req: Request) => Response 
     const url = new URL(req.url);
     const pathname = url.pathname;
     const publicRequestUrl = getPublicRequestUrl(req).toString();
+    const startMode = resolveStartMode(url.searchParams.get("start"), config.calendar.startMode);
 
     if (pathname === "/health") {
       const lastUpdated = getLastUpdated();
@@ -36,6 +52,7 @@ export function createServerHandler(config: Config): (req: Request) => Response 
     if (pathname === "/calendar.ics") {
       const ical = generateICal(getCachedEvents(), {
         calendarUrl: publicRequestUrl,
+        startMode,
       });
       return createCalendarResponse(ical, "calendar.ics");
     }
@@ -46,6 +63,7 @@ export function createServerHandler(config: Config): (req: Request) => Response 
       const ical = generateICal(events, {
         calendarName: `SpielerPlus - ${filter.token}`,
         calendarUrl: publicRequestUrl,
+        startMode,
       });
       return createCalendarResponse(ical, `${filter.token}.ics`);
     }
@@ -69,12 +87,18 @@ export function createServerHandler(config: Config): (req: Request) => Response 
       const ical = generateICal(events, {
         calendarName: `SpielerPlus - ${uniqueTokens.join(" + ")}`,
         calendarUrl: publicRequestUrl,
+        startMode,
       });
       return createCalendarResponse(ical, `${uniqueTokens.join("+")}.ics`);
     }
 
     if (pathname === "/") {
-      const html = renderHomePage(filters, getPublicRequestUrl(req));
+      const html = renderHomePage(
+        filters,
+        getPublicRequestUrl(req),
+        config.calendar.startMode,
+        startMode,
+      );
       return new Response(html, {
         headers: { "Content-Type": "text/html; charset=utf-8" },
       });

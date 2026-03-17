@@ -104,6 +104,14 @@ describe("generateICal", () => {
     expect(ical).toContain("URL:https://calendar.example.com/team/training+games.ics");
   });
 
+  test("uses meet time as start when configured", () => {
+    const ical = generateICal([mockEvents[0]!], {
+      startMode: "meet",
+    });
+    expect(ical).toContain("DTSTART:20260415T190000");
+    expect(ical).toContain("DTEND:20260415T204500");
+  });
+
   test("skips events without start time", () => {
     const firstEvent = mockEvents[0];
     expect(firstEvent).toBeDefined();

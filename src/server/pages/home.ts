@@ -3,6 +3,8 @@ import type { FilteredEndpoint } from "../../config.js";
 import { buildPublicUrl } from "../proxy.js";
 import type { ServerFilter } from "../filtering.js";
 
+type StartMode = "start" | "meet";
+
 const HOME_PAGE_TEMPLATE = readFileSync(
   new URL("../templates/home.html", import.meta.url),
   "utf-8",
@@ -23,6 +25,18 @@ function toWebcalUrl(url: string): string {
 
 function toGoogleCalendarUrl(url: string): string {
   return `https://www.google.com/calendar/render?cid=${encodeURIComponent(toWebcalUrl(url))}`;
+}
+
+function applyStartMode(url: string, startMode: StartMode, defaultStartMode: StartMode): string {
+  const nextUrl = new URL(url);
+
+  if (startMode !== defaultStartMode) {
+    nextUrl.searchParams.set("start", startMode);
+  } else {
+    nextUrl.searchParams.delete("start");
+  }
+
+  return nextUrl.toString();
 }
 
 function describeFilter(filter: FilteredEndpoint): string {
@@ -69,12 +83,23 @@ function renderFilterCards(filters: ServerFilter[]): string {
     .join("");
 }
 
-export function renderHomePage(filters: ServerFilter[], publicRootUrl: URL): string {
-  const fullCalendarUrl = buildPublicUrl(publicRootUrl, "/calendar.ics");
+export function renderHomePage(
+  filters: ServerFilter[],
+  publicRootUrl: URL,
+  defaultStartMode: StartMode,
+  selectedStartMode: StartMode = defaultStartMode,
+): string {
+  const fullCalendarUrl = applyStartMode(
+    buildPublicUrl(publicRootUrl, "/calendar.ics"),
+    selectedStartMode,
+    defaultStartMode,
+  );
   const fullCalendarWebcalUrl = toWebcalUrl(fullCalendarUrl);
   const fullCalendarGoogleUrl = toGoogleCalendarUrl(fullCalendarUrl);
 
   return HOME_PAGE_TEMPLATE.replaceAll("__ROOT_URL__", escapeHtml(publicRootUrl.toString()))
+    .replaceAll("__DEFAULT_START_MODE__", escapeHtml(defaultStartMode))
+    .replaceAll("__SELECTED_START_MODE__", escapeHtml(selectedStartMode))
     .replaceAll("__FULL_CALENDAR_URL__", escapeHtml(fullCalendarUrl))
     .replaceAll("__FULL_CALENDAR_WEBCAL_URL__", escapeHtml(fullCalendarWebcalUrl))
     .replaceAll("__FULL_CALENDAR_GOOGLE_URL__", escapeHtml(fullCalendarGoogleUrl))

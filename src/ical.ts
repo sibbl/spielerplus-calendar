@@ -4,6 +4,7 @@ import type { CalendarEvent } from "./types.js";
 interface GenerateICalOptions {
   calendarName?: string;
   calendarUrl?: string;
+  startMode?: "start" | "meet";
 }
 
 function parseDateTime(date: string, time: string | null): Date | null {
@@ -21,6 +22,7 @@ export function generateICal(
 ): string {
   const normalizedOptions = typeof options === "string" ? { calendarName: options } : options;
   const calendarName = normalizedOptions.calendarName ?? "SpielerPlus";
+  const startMode = normalizedOptions.startMode ?? "start";
 
   const calendar = icalGenerator({
     name: calendarName,
@@ -31,7 +33,8 @@ export function generateICal(
   });
 
   for (const event of events) {
-    const start = parseDateTime(event.date, event.startTime);
+    const startSource = startMode === "meet" ? event.meetTime || event.startTime : event.startTime;
+    const start = parseDateTime(event.date, startSource);
     const end = parseDateTime(event.date, event.endTime);
 
     if (!start) continue;

@@ -151,6 +151,21 @@ describe("server endpoints", () => {
     expect(body).toContain("URL:https://calendar.example.com/team/training+games.ics");
   });
 
+  test("GET /games+other.ics excludes events matched by other configured filters from others", async () => {
+    const res = await fetch(`http://localhost:${server.port}/games+other.ics`);
+    const body = await res.text();
+
+    // games filter matches both game events
+    expect(body).toContain("SUMMARY:Testspiel bei Phantomkicker (Auswärtsspiel) - Phantomkicker");
+    expect(body).toContain("SUMMARY:Trainingsspiel gegen Phantomkicker - Phantomkicker");
+    // other filter must only include events not matched by ANY configured filter (training + games)
+    // so Training must NOT appear even though it is not matched by the games filter
+    expect(body).not.toContain("SUMMARY:Training\r\n");
+    // Sommerfest is not matched by any configured filter, so it must appear via "other"
+    expect(body).toContain("SUMMARY:Sommerfest");
+    expect((body.match(/BEGIN:VEVENT/g) || []).length).toBe(3);
+  });
+
   test("GET /other.ics returns only events unmatched by configured filters", async () => {
     const res = await fetch(`http://localhost:${server.port}/other.ics`);
     const body = await res.text();

@@ -83,7 +83,7 @@ export function createServerHandler(config: Config): (req: Request) => Response 
         return new Response("Not Found", { status: 404 });
       }
 
-      const events = combineFilteredEvents(getCachedEvents(), combinedFilters);
+      const events = combineFilteredEvents(getCachedEvents(), combinedFilters, filters);
       const ical = generateICal(events, {
         calendarName: `SpielerPlus - ${uniqueTokens.join(" + ")}`,
         calendarUrl: publicRequestUrl,

@@ -90,11 +90,12 @@ export function filterEvents(
 export function combineFilteredEvents(
   events: CalendarEvent[],
   filters: FilteredEndpoint[],
+  allFilters: FilteredEndpoint[] = filters,
 ): CalendarEvent[] {
   const seenIds = new Set<string>();
 
   return events.filter((event) => {
-    if (!filters.some((filter) => matchesServerFilter(event, filter, filters))) {
+    if (!filters.some((filter) => matchesServerFilter(event, filter, allFilters))) {
       return false;
     }
 

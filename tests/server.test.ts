@@ -44,6 +44,19 @@ const mockEvents: CalendarEvent[] = [
     address: "Nebenplatz 3, 04100 Beispielstadt, Deutschland",
     url: "https://www.spielerplus.de/game/view?id=30001",
   },
+  {
+    id: "40001",
+    type: "other",
+    title: "Sommerfest",
+    subtitle: "",
+    description: "Gemeinsamer Saisonabschluss",
+    date: "2026-07-04",
+    meetTime: "17:00",
+    startTime: "17:00",
+    endTime: "23:30",
+    address: "Jahnallee, 04000 Beispielstadt, Deutschland",
+    url: "https://www.spielerplus.de/event/view?id=40001",
+  },
 ];
 
 const testConfig: Config = {
@@ -79,7 +92,7 @@ describe("server endpoints", () => {
     const res = await fetch(`http://localhost:${server.port}/health`);
     const data = (await res.json()) as { status: string; eventCount: number };
     expect(data.status).toBe("ok");
-    expect(data.eventCount).toBe(3);
+    expect(data.eventCount).toBe(4);
   });
 
   test("GET /calendar.ics returns valid iCal", async () => {
@@ -130,11 +143,24 @@ describe("server endpoints", () => {
     expect(body).toContain("SUMMARY:Training");
     expect(body).toContain("SUMMARY:Testspiel bei Phantomkicker (Auswärtsspiel) - Phantomkicker");
     expect(body).toContain("SUMMARY:Trainingsspiel gegen Phantomkicker - Phantomkicker");
+    expect(body).not.toContain("SUMMARY:Sommerfest");
     expect((body.match(/BEGIN:VEVENT/g) || []).length).toBe(3);
     expect(
       (body.match(/SUMMARY:Trainingsspiel gegen Phantomkicker - Phantomkicker/g) || []).length,
     ).toBe(1);
     expect(body).toContain("URL:https://calendar.example.com/team/training+games.ics");
+  });
+
+  test("GET /other.ics returns only events unmatched by configured filters", async () => {
+    const res = await fetch(`http://localhost:${server.port}/other.ics`);
+    const body = await res.text();
+
+    expect(body).toContain("SUMMARY:Sommerfest");
+    expect(body).not.toContain("SUMMARY:Training\r\n");
+    expect(body).not.toContain(
+      "SUMMARY:Testspiel bei Phantomkicker (Auswärtsspiel) - Phantomkicker",
+    );
+    expect((body.match(/BEGIN:VEVENT/g) || []).length).toBe(1);
   });
 
   test("GET / returns landing page", async () => {
@@ -144,6 +170,7 @@ describe("server endpoints", () => {
     expect(body).toContain("cdn.tailwindcss.com");
     expect(body).toContain('value="training"');
     expect(body).toContain('value="games"');
+    expect(body).toContain('value="other"');
     expect(body).toContain("Build your feed.");
     expect(body).not.toContain("Proxy-aware URLs supported via forwarded headers");
     expect(body).toContain('id="apple-link"');

@@ -8,6 +8,7 @@ Scrapes calendar events from [SpielerPlus](https://www.spielerplus.de) and serve
 - **iCal feed** compatible with Google Calendar, Apple Calendar, Outlook, etc.
 - **Filtered endpoints** using regex on title, name, or address
 - **Combined filter feeds** by joining filter names with `+` in the URL
+- **Synthetic `other` feed** for events unmatched by all configured filters
 - **Cron-based scheduling** for periodic data refresh
 - **Persistent caching** — stores cache on disk and only updates when data changes
 - **Reverse proxy awareness** for public feed URLs behind forwarded host/proto/prefix headers
@@ -94,6 +95,8 @@ Example in `config.json`:
 
 You can combine configured filters directly in the feed URL. For example, if you have `/training.ics` and `/games.ics`, then `/training+games.ics` returns the union of both filters and removes duplicate events that match both.
 
+When at least one custom filter is configured, the server also exposes `/other.ics`. This synthetic feed contains every event that does not match any configured filter. It also appears on the landing page and can be combined with other filters like `/training+other.ics`.
+
 ## API Endpoints
 
 | Endpoint                       | Description                                        |
@@ -102,6 +105,7 @@ You can combine configured filters directly in the feed URL. For example, if you
 | `GET /health`                  | Health check with last update time and event count |
 | `GET /calendar.ics`            | Full iCal calendar feed                            |
 | `GET /<filter>.ics`            | Filtered iCal feed (as configured)                 |
+| `GET /other.ics`               | Events unmatched by all configured filters         |
 | `GET /<filterA>+<filterB>.ics` | Combined iCal feed with duplicate events removed   |
 
 ## Reverse Proxy Support

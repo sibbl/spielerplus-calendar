@@ -40,6 +40,10 @@ function applyStartMode(url: string, startMode: StartMode, defaultStartMode: Sta
 }
 
 function describeFilter(filter: FilteredEndpoint): string {
+  if ("kind" in filter && filter.kind === "other") {
+    return "Matches events not covered by the other filters";
+  }
+
   return [
     filter.titleRegex ? `title ${filter.titleRegex}` : null,
     filter.nameRegex ? `name ${filter.nameRegex}` : null,

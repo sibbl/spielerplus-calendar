@@ -59,7 +59,7 @@ export function createServerHandler(config: Config): (req: Request) => Response 
 
     const filter = filterMap.get(pathname);
     if (filter) {
-      const events = filterEvents(getCachedEvents(), filter);
+      const events = filterEvents(getCachedEvents(), filter, filters);
       const ical = generateICal(events, {
         calendarName: `SpielerPlus - ${filter.token}`,
         calendarUrl: publicRequestUrl,

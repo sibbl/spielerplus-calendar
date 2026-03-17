@@ -2,12 +2,7 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
-import {
-  initializeCache,
-  updateCache,
-  getCachedEvents,
-  getLastUpdated,
-} from "../src/cache.js";
+import { initializeCache, updateCache, getCachedEvents, getLastUpdated } from "../src/cache.js";
 import type { CalendarEvent } from "../src/types.js";
 
 const mockEvent: CalendarEvent = {
@@ -22,6 +17,19 @@ const mockEvent: CalendarEvent = {
   endTime: "20:45",
   address: "Musterweg 42, 04000 Beispielstadt, Deutschland",
   url: "https://www.spielerplus.de/training/view?id=10001",
+};
+
+const secondMockEvent: CalendarEvent = {
+  ...mockEvent,
+  id: "10002",
+  title: "Auswaertsspiel",
+  type: "game",
+  date: "2026-04-17",
+  meetTime: "18:30",
+  startTime: "19:00",
+  endTime: "21:00",
+  address: "Fiktivstrasse 7, 04100 Beispielstadt, Deutschland",
+  url: "https://www.spielerplus.de/game/view?id=10002",
 };
 
 let tempDir: string;
@@ -65,6 +73,22 @@ describe("cache", () => {
     const modified = { ...mockEvent, title: "Modified Training" };
     const changed = updateCache([modified]);
     expect(changed).toBe(true);
+  });
+
+  test("removes deleted events from cache and disk", () => {
+    updateCache([mockEvent, secondMockEvent]);
+
+    const changed = updateCache([secondMockEvent]);
+    const persisted = JSON.parse(readFileSync(cacheFile, "utf-8")) as {
+      lastUpdated: string | null;
+      events: CalendarEvent[];
+    };
+
+    expect(changed).toBe(true);
+    expect(getCachedEvents()).toHaveLength(1);
+    expect(getCachedEvents()[0]?.id).toBe("10002");
+    expect(persisted.events).toHaveLength(1);
+    expect(persisted.events[0]?.id).toBe("10002");
   });
 
   test("persists cache to disk", () => {

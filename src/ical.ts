@@ -1,6 +1,11 @@
 import icalGenerator, { type ICalCalendarMethod } from "ical-generator";
 import type { CalendarEvent } from "./types.js";
 
+interface GenerateICalOptions {
+  calendarName?: string;
+  calendarUrl?: string;
+}
+
 function parseDateTime(date: string, time: string | null): Date | null {
   if (!time) return null;
   const [hours, minutes] = time.split(":").map(Number);
@@ -12,13 +17,17 @@ function parseDateTime(date: string, time: string | null): Date | null {
 
 export function generateICal(
   events: CalendarEvent[],
-  calendarName = "SpielerPlus"
+  options: string | GenerateICalOptions = {},
 ): string {
+  const normalizedOptions = typeof options === "string" ? { calendarName: options } : options;
+  const calendarName = normalizedOptions.calendarName ?? "SpielerPlus";
+
   const calendar = icalGenerator({
     name: calendarName,
     prodId: { company: "spielerplus-calendar", product: "scraper" },
     method: "PUBLISH" as unknown as ICalCalendarMethod,
     timezone: "Europe/Berlin",
+    url: normalizedOptions.calendarUrl ?? null,
   });
 
   for (const event of events) {

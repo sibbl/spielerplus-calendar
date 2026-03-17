@@ -97,6 +97,13 @@ describe("generateICal", () => {
     expect(ical).toContain("My Custom Calendar");
   });
 
+  test("includes the public calendar URL when configured", () => {
+    const ical = generateICal(mockEvents, {
+      calendarUrl: "https://calendar.example.com/team/training+games.ics",
+    });
+    expect(ical).toContain("URL:https://calendar.example.com/team/training+games.ics");
+  });
+
   test("skips events without start time", () => {
     const firstEvent = mockEvents[0];
     expect(firstEvent).toBeDefined();

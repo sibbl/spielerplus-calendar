@@ -33,14 +33,14 @@ function createCookieJar(): CookieJar {
 async function fetchWithCookies(
   jar: CookieJar,
   url: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
 ): Promise<Response> {
   const headers = new Headers(options.headers);
   headers.set("Cookie", jar.getCookieHeader());
   if (!headers.has("User-Agent")) {
     headers.set(
       "User-Agent",
-      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     );
   }
 
@@ -55,20 +55,14 @@ async function fetchWithCookies(
   // Follow redirects manually to capture cookies
   const location = response.headers.get("Location");
   if (location && (response.status === 301 || response.status === 302)) {
-    const redirectUrl = location.startsWith("http")
-      ? location
-      : `${BASE_URL}${location}`;
+    const redirectUrl = location.startsWith("http") ? location : `${BASE_URL}${location}`;
     return fetchWithCookies(jar, redirectUrl);
   }
 
   return response;
 }
 
-async function login(
-  jar: CookieJar,
-  email: string,
-  password: string
-): Promise<void> {
+async function login(jar: CookieJar, email: string, password: string): Promise<void> {
   // 1. GET login page to get CSRF token
   const loginPageRes = await fetchWithCookies(jar, `${BASE_URL}/site/login`);
   const loginPageHtml = await loginPageRes.text();
@@ -105,10 +99,7 @@ async function selectTeam(jar: CookieJar, teamId: string): Promise<void> {
   await fetchWithCookies(jar, `${BASE_URL}/site/switch-user?id=${encodeURIComponent(teamId)}`);
 }
 
-function parseEventsFromHtml(
-  html: string,
-  yearHint: number
-): Omit<CalendarEvent, "address">[] {
+function parseEventsFromHtml(html: string, yearHint: number): Omit<CalendarEvent, "address">[] {
   const $ = cheerio.load(html);
   const events: Omit<CalendarEvent, "address">[] = [];
 
@@ -128,12 +119,9 @@ function parseEventsFromHtml(
       type = "game";
     }
 
-    const title =
-      $(el).find(".panel-heading-text .panel-title").text().trim();
-    const subtitle =
-      $(el).find(".panel-heading-text .panel-subtitle").text().trim();
-    const dateStr =
-      $(el).find(".panel-heading-info .panel-subtitle").text().trim(); // "DD.MM"
+    const title = $(el).find(".panel-heading-text .panel-title").text().trim();
+    const subtitle = $(el).find(".panel-heading-text .panel-subtitle").text().trim();
+    const dateStr = $(el).find(".panel-heading-info .panel-subtitle").text().trim(); // "DD.MM"
 
     // Parse times
     let meetTime: string | null = null;
@@ -153,8 +141,7 @@ function parseEventsFromHtml(
     const info = $(el).find(".event-info").text().trim();
 
     // Build URL from link
-    const linkHref =
-      $(el).find(".event-header-border").attr("href") || "";
+    const linkHref = $(el).find(".event-header-border").attr("href") || "";
     const url = linkHref ? `${BASE_URL}${linkHref}` : "";
 
     // Parse date
@@ -181,10 +168,7 @@ function parseEventsFromHtml(
   return events;
 }
 
-async function fetchEventAddress(
-  jar: CookieJar,
-  url: string
-): Promise<string | null> {
+async function fetchEventAddress(jar: CookieJar, url: string): Promise<string | null> {
   if (!url) return null;
 
   const res = await fetchWithCookies(jar, url);
@@ -192,9 +176,7 @@ async function fetchEventAddress(
   const $ = cheerio.load(html);
 
   // Address is in a link containing h4 "Adresse"
-  const addressHeading = $('h4').filter((_i, el) =>
-    $(el).text().trim() === "Adresse"
-  );
+  const addressHeading = $("h4").filter((_i, el) => $(el).text().trim() === "Adresse");
   if (addressHeading.length === 0) return null;
 
   const container = addressHeading.parent();
@@ -211,7 +193,7 @@ async function fetchEventAddress(
 export async function scrapeEvents(
   email: string,
   password: string,
-  teamId: string
+  teamId: string,
 ): Promise<CalendarEvent[]> {
   const jar = createCookieJar();
 
@@ -241,15 +223,11 @@ export async function scrapeEvents(
     const formData = new URLSearchParams();
     formData.set("offset", String(offset));
 
-    const moreRes = await fetchWithCookies(
-      jar,
-      `${BASE_URL}/events/ajaxgetevents`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: formData.toString(),
-      }
-    );
+    const moreRes = await fetchWithCookies(jar, `${BASE_URL}/events/ajaxgetevents`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: formData.toString(),
+    });
 
     const moreData = (await moreRes.json()) as {
       html: string;
@@ -262,9 +240,7 @@ export async function scrapeEvents(
     hasMore = moreData.count >= 5;
   }
 
-  console.log(
-    `[scraper] Found ${allPartialEvents.length} events. Fetching addresses...`
-  );
+  console.log(`[scraper] Found ${allPartialEvents.length} events. Fetching addresses...`);
 
   // Fetch addresses for each event (in batches to avoid overloading)
   const BATCH_SIZE = 5;
@@ -276,7 +252,7 @@ export async function scrapeEvents(
       batch.map(async (event) => {
         const address = await fetchEventAddress(jar, event.url);
         return { ...event, address };
-      })
+      }),
     );
     events.push(...results);
   }

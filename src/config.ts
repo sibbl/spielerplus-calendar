@@ -33,30 +33,14 @@ function loadJsonConfig(filePath: string): Partial<Config> | null {
 }
 
 export function loadConfig(): Config {
-  const jsonPath =
-    process.env["CONFIG_FILE"] || join(process.cwd(), "config.json");
+  const jsonPath = process.env["CONFIG_FILE"] || join(process.cwd(), "config.json");
   const jsonConfig = loadJsonConfig(jsonPath);
 
-  const email =
-    process.env["SPIELERPLUS_EMAIL"] ||
-    jsonConfig?.spielerplus?.email ||
-    "";
-  const password =
-    process.env["SPIELERPLUS_PASSWORD"] ||
-    jsonConfig?.spielerplus?.password ||
-    "";
-  const teamId =
-    process.env["SPIELERPLUS_TEAM_ID"] ||
-    jsonConfig?.spielerplus?.teamId ||
-    "";
-  const port = Number.parseInt(
-    process.env["PORT"] || String(jsonConfig?.server?.port || 3000),
-    10
-  );
-  const cron =
-    process.env["SCHEDULE_CRON"] ||
-    jsonConfig?.schedule?.cron ||
-    "0 */15 * * * *";
+  const email = process.env["SPIELERPLUS_EMAIL"] || jsonConfig?.spielerplus?.email || "";
+  const password = process.env["SPIELERPLUS_PASSWORD"] || jsonConfig?.spielerplus?.password || "";
+  const teamId = process.env["SPIELERPLUS_TEAM_ID"] || jsonConfig?.spielerplus?.teamId || "";
+  const port = Number.parseInt(process.env["PORT"] || String(jsonConfig?.server?.port || 3000), 10);
+  const cron = process.env["SCHEDULE_CRON"] || jsonConfig?.schedule?.cron || "0 */15 * * * *";
   const cacheFile =
     process.env["CACHE_FILE"] ||
     jsonConfig?.cache?.file ||
@@ -69,7 +53,7 @@ export function loadConfig(): Config {
 
   if (!email || !password || !teamId) {
     throw new Error(
-      "Missing required config: SPIELERPLUS_EMAIL, SPIELERPLUS_PASSWORD, SPIELERPLUS_TEAM_ID"
+      "Missing required config: SPIELERPLUS_EMAIL, SPIELERPLUS_PASSWORD, SPIELERPLUS_TEAM_ID",
     );
   }
 

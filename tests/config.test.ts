@@ -80,8 +80,7 @@ describe("loadConfig", () => {
     process.env["SPIELERPLUS_EMAIL"] = "test@example.com";
     process.env["SPIELERPLUS_PASSWORD"] = mockSecretValue;
     process.env["SPIELERPLUS_TEAM_ID"] = "12345";
-    process.env["FILTERS"] =
-      '[{"path":"/training.ics","titleRegex":"Training"}]';
+    process.env["FILTERS"] = '[{"path":"/training.ics","titleRegex":"Training"}]';
     process.env["CONFIG_FILE"] = "/tmp/nonexistent-config.json";
 
     try {

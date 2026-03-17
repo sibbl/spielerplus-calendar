@@ -7,8 +7,10 @@ Scrapes calendar events from [SpielerPlus](https://www.spielerplus.de) and serve
 - **Automated scraping** of training sessions, games, and other events from SpielerPlus
 - **iCal feed** compatible with Google Calendar, Apple Calendar, Outlook, etc.
 - **Filtered endpoints** using regex on title, name, or address
+- **Combined filter feeds** by joining filter names with `+` in the URL
 - **Cron-based scheduling** for periodic data refresh
 - **Persistent caching** — stores cache on disk and only updates when data changes
+- **Reverse proxy awareness** for public feed URLs behind forwarded host/proto/prefix headers
 - **Dual configuration** via `.env` or `config.json`
 - **Docker support** with multi-stage Alpine build and Compose setup
 
@@ -46,16 +48,16 @@ Configuration can be provided via environment variables (`.env`) or a JSON confi
 
 ### Environment Variables
 
-| Variable | Required | Default | Description |
-| --- | --- | --- | --- |
-| `SPIELERPLUS_EMAIL` | Yes | — | SpielerPlus login email |
-| `SPIELERPLUS_PASSWORD` | Yes | — | SpielerPlus login password |
-| `SPIELERPLUS_TEAM_ID` | Yes | — | Team/user ID for team selection |
-| `PORT` | No | `3000` | HTTP server port |
-| `SCHEDULE_CRON` | No | `0 */15 * * * *` | Cron expression (6-field, with seconds) |
-| `CACHE_FILE` | No | `./cache/events.json` | File path for persisted cache data |
-| `FILTERS` | No | `[]` | JSON array of filtered endpoints |
-| `CONFIG_FILE` | No | `./config.json` | Path to JSON config file |
+| Variable               | Required | Default               | Description                             |
+| ---------------------- | -------- | --------------------- | --------------------------------------- |
+| `SPIELERPLUS_EMAIL`    | Yes      | —                     | SpielerPlus login email                 |
+| `SPIELERPLUS_PASSWORD` | Yes      | —                     | SpielerPlus login password              |
+| `SPIELERPLUS_TEAM_ID`  | Yes      | —                     | Team/user ID for team selection         |
+| `PORT`                 | No       | `3000`                | HTTP server port                        |
+| `SCHEDULE_CRON`        | No       | `0 */15 * * * *`      | Cron expression (6-field, with seconds) |
+| `CACHE_FILE`           | No       | `./cache/events.json` | File path for persisted cache data      |
+| `FILTERS`              | No       | `[]`                  | JSON array of filtered endpoints        |
+| `CONFIG_FILE`          | No       | `./config.json`       | Path to JSON config file                |
 
 ### JSON Config File
 
@@ -90,14 +92,31 @@ Example in `config.json`:
 }
 ```
 
+You can combine configured filters directly in the feed URL. For example, if you have `/training.ics` and `/games.ics`, then `/training+games.ics` returns the union of both filters and removes duplicate events that match both.
+
 ## API Endpoints
 
-| Endpoint | Description |
-| --- | --- |
-| `GET /` | Lists all available endpoints |
-| `GET /health` | Health check with last update time and event count |
-| `GET /calendar.ics` | Full iCal calendar feed |
-| `GET /<filter>.ics` | Filtered iCal feed (as configured) |
+| Endpoint                       | Description                                        |
+| ------------------------------ | -------------------------------------------------- |
+| `GET /`                        | Landing page for composing feed URLs               |
+| `GET /health`                  | Health check with last update time and event count |
+| `GET /calendar.ics`            | Full iCal calendar feed                            |
+| `GET /<filter>.ics`            | Filtered iCal feed (as configured)                 |
+| `GET /<filterA>+<filterB>.ics` | Combined iCal feed with duplicate events removed   |
+
+## Reverse Proxy Support
+
+When deployed behind a reverse proxy such as Traefik, the server uses forwarded request headers to generate the public feed URL inside the ICS output and on the landing page.
+
+Supported headers:
+
+- `X-Forwarded-Proto`
+- `X-Forwarded-Host`
+- `X-Forwarded-Prefix`
+- `X-Forwarded-Uri`
+- standard `Forwarded`
+
+This allows deployments under a subpath such as `/calendar` while still advertising public URLs like `https://example.com/calendar/training+games.ics`.
 
 ## Docker
 

@@ -1,5 +1,6 @@
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
-import { updateCache } from "../src/cache.js";
+import { initializeCache, updateCache } from "../src/cache.js";
+import { startServer } from "../src/server.js";
 import type { CalendarEvent } from "../src/types.js";
 import type { Config } from "../src/config.js";
 
@@ -30,6 +31,19 @@ const mockEvents: CalendarEvent[] = [
     address: "Fiktivstraße 7, 04100 Beispielstadt, Deutschland",
     url: "https://www.spielerplus.de/game/view?id=20001",
   },
+  {
+    id: "30001",
+    type: "game",
+    title: "Trainingsspiel gegen Phantomkicker",
+    subtitle: "Phantomkicker",
+    description: "Testmatch unter Trainingsbedingungen",
+    date: "2026-04-19",
+    meetTime: "17:30",
+    startTime: "18:00",
+    endTime: "20:00",
+    address: "Nebenplatz 3, 04100 Beispielstadt, Deutschland",
+    url: "https://www.spielerplus.de/game/view?id=30001",
+  },
 ];
 
 const testConfig: Config = {
@@ -50,58 +64,9 @@ const testConfig: Config = {
 let server: ReturnType<typeof Bun.serve>;
 
 beforeAll(() => {
+  initializeCache(testConfig.cache.file);
   updateCache(mockEvents);
-
-  const filterMap = new Map(
-    testConfig.filters.map((f) => [
-      f.path.startsWith("/") ? f.path : `/${f.path}`,
-      f,
-    ])
-  );
-
-  server = Bun.serve({
-    port: 0,
-    fetch(req) {
-      const url = new URL(req.url);
-      const pathname = url.pathname;
-
-      if (pathname === "/health") {
-        return Response.json({
-          status: "ok",
-          eventCount: mockEvents.length,
-        });
-      }
-
-      if (pathname === "/calendar.ics") {
-        const { generateICal } = require("../src/ical.js");
-        const { getCachedEvents } = require("../src/cache.js");
-        return new Response(generateICal(getCachedEvents()), {
-          headers: { "Content-Type": "text/calendar; charset=utf-8" },
-        });
-      }
-
-      const filter = filterMap.get(pathname);
-      if (filter) {
-        const { generateICal } = require("../src/ical.js");
-        const { getCachedEvents } = require("../src/cache.js");
-        const events = getCachedEvents().filter((e: CalendarEvent) => {
-          if (filter.titleRegex) {
-            return new RegExp(filter.titleRegex, "i").test(e.title);
-          }
-          return true;
-        });
-        return new Response(generateICal(events, filter.path), {
-          headers: { "Content-Type": "text/calendar; charset=utf-8" },
-        });
-      }
-
-      if (pathname === "/") {
-        return Response.json({ endpoints: [] });
-      }
-
-      return new Response("Not Found", { status: 404 });
-    },
-  });
+  server = startServer(testConfig);
 });
 
 afterAll(() => {
@@ -113,7 +78,7 @@ describe("server endpoints", () => {
     const res = await fetch(`http://localhost:${server.port}/health`);
     const data = (await res.json()) as { status: string; eventCount: number };
     expect(data.status).toBe("ok");
-    expect(data.eventCount).toBe(2);
+    expect(data.eventCount).toBe(3);
   });
 
   test("GET /calendar.ics returns valid iCal", async () => {
@@ -128,21 +93,62 @@ describe("server endpoints", () => {
   test("GET /training.ics returns only training events", async () => {
     const res = await fetch(`http://localhost:${server.port}/training.ics`);
     const body = await res.text();
-    expect(body).toContain("Training");
-    expect(body).not.toContain("Phantomkicker");
+    expect(body).toContain("SUMMARY:Training");
+    expect(body).toContain("SUMMARY:Trainingsspiel gegen Phantomkicker - Phantomkicker");
+    expect(body).not.toContain(
+      "SUMMARY:Testspiel bei Phantomkicker (Auswärtsspiel) - Phantomkicker",
+    );
   });
 
   test("GET /games.ics returns only game events", async () => {
     const res = await fetch(`http://localhost:${server.port}/games.ics`);
     const body = await res.text();
-    expect(body).toContain("Phantomkicker");
-    expect(body).not.toContain("SUMMARY:Training");
+    expect(body).toContain("SUMMARY:Testspiel bei Phantomkicker (Auswärtsspiel) - Phantomkicker");
+    expect(body).toContain("SUMMARY:Trainingsspiel gegen Phantomkicker - Phantomkicker");
+    expect(body).not.toContain("SUMMARY:Training\r\n");
   });
 
-  test("GET / returns endpoint list", async () => {
+  test("GET /training+games.ics combines filters without duplicates", async () => {
+    const res = await fetch(`http://localhost:${server.port}/training+games.ics`, {
+      headers: {
+        "x-forwarded-host": "calendar.example.com",
+        "x-forwarded-prefix": "/team",
+        "x-forwarded-proto": "https",
+      },
+    });
+    const body = await res.text();
+
+    expect(body).toContain("SUMMARY:Training");
+    expect(body).toContain("SUMMARY:Testspiel bei Phantomkicker (Auswärtsspiel) - Phantomkicker");
+    expect(body).toContain("SUMMARY:Trainingsspiel gegen Phantomkicker - Phantomkicker");
+    expect((body.match(/BEGIN:VEVENT/g) || []).length).toBe(3);
+    expect(
+      (body.match(/SUMMARY:Trainingsspiel gegen Phantomkicker - Phantomkicker/g) || []).length,
+    ).toBe(1);
+    expect(body).toContain("URL:https://calendar.example.com/team/training+games.ics");
+  });
+
+  test("GET / returns landing page", async () => {
     const res = await fetch(`http://localhost:${server.port}/`);
-    const data = await res.json();
-    expect(data).toHaveProperty("endpoints");
+    const body = await res.text();
+    expect(res.headers.get("content-type")).toContain("text/html");
+    expect(body).toContain("cdn.tailwindcss.com");
+    expect(body).toContain('value="training"');
+    expect(body).toContain('value="games"');
+    expect(body).toContain("Build a clean subscription feed");
+  });
+
+  test("GET / respects forwarded subpath on the landing page", async () => {
+    const res = await fetch(`http://localhost:${server.port}/`, {
+      headers: {
+        "x-forwarded-host": "calendar.example.com",
+        "x-forwarded-prefix": "/team",
+        "x-forwarded-proto": "https",
+      },
+    });
+    const body = await res.text();
+    expect(body).toContain('data-root-url="https://calendar.example.com/team/"');
+    expect(body).toContain("https://calendar.example.com/team/calendar.ics");
   });
 
   test("GET /unknown returns 404", async () => {

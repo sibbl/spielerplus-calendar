@@ -11,7 +11,7 @@ async function runScrape(config: Config): Promise<void> {
     const events = await scrapeEvents(
       config.spielerplus.email,
       config.spielerplus.password,
-      config.spielerplus.teamId
+      config.spielerplus.teamId,
     );
     updateCache(events);
   } catch (error) {
@@ -31,7 +31,7 @@ export function startScheduler(config: Config): void {
     },
     null,
     true,
-    "Europe/Berlin"
+    "Europe/Berlin",
   );
 
   console.log(`[scheduler] Scheduled with cron: ${config.schedule.cron}`);

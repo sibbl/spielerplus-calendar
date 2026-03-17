@@ -68,11 +68,7 @@ describe("parseEventsFromHtml", () => {
 
   test("generates correct URLs", () => {
     const events = parseEventsFromHtml(MOCK_EVENTS_HTML, 2026);
-    expect(events[0]?.url).toBe(
-      "https://www.spielerplus.de/training/view?id=10001"
-    );
-    expect(events[1]?.url).toBe(
-      "https://www.spielerplus.de/game/view?id=20001"
-    );
+    expect(events[0]?.url).toBe("https://www.spielerplus.de/training/view?id=10001");
+    expect(events[1]?.url).toBe("https://www.spielerplus.de/game/view?id=20001");
   });
 });

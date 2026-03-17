@@ -75,7 +75,7 @@ The JSON config also supports:
 Define additional iCal endpoints that filter events by regex. Each filter can match on:
 
 - `titleRegex` — matches event title
-- `nameRegex` — matches title + subtitle combined
+- `nameRegex` — matches title, subtitle, and scraped detail notes combined
 - `addressRegex` — matches event address
 
 Example in `.env`:

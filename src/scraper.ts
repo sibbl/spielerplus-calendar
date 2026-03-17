@@ -3,6 +3,11 @@ import type { CalendarEvent } from "./types.js";
 
 const BASE_URL = "https://www.spielerplus.de";
 
+interface EventDetails {
+  address: string | null;
+  note: string | null;
+}
+
 interface CookieJar {
   cookies: Map<string, string>;
   setCookiesFromHeaders(headers: Headers): void;
@@ -168,24 +173,40 @@ function parseEventsFromHtml(html: string, yearHint: number): Omit<CalendarEvent
   return events;
 }
 
-async function fetchEventAddress(jar: CookieJar, url: string): Promise<string | null> {
-  if (!url) return null;
-
-  const res = await fetchWithCookies(jar, url);
-  const html = await res.text();
+function parseEventDetailsFromHtml(html: string): EventDetails {
   const $ = cheerio.load(html);
 
   const addressHeading = $("h4").filter((_i, el) => $(el).text().trim() === "Adresse");
-  if (addressHeading.length === 0) return null;
+  let address: string | null = null;
+  if (addressHeading.length > 0) {
+    const container = addressHeading.parent();
+    const addressText = container
+      .contents()
+      .filter((_i, el) => el !== addressHeading[0])
+      .text()
+      .trim();
+    address = addressText || null;
+  }
 
-  const container = addressHeading.parent();
-  const addressText = container
-    .contents()
-    .filter((_i, el) => el !== addressHeading[0])
-    .text()
-    .trim();
+  const note =
+    $("p")
+      .map((_i, el) => $(el).text().trim())
+      .get()
+      .find((text) => text.startsWith("„") && text.endsWith("“"))
+      ?.replace(/^„/, "")
+      .replace(/“$/, "") || null;
 
-  return addressText || null;
+  return { address, note };
+}
+
+async function fetchEventDetails(jar: CookieJar, url: string): Promise<EventDetails> {
+  if (!url) {
+    return { address: null, note: null };
+  }
+
+  const res = await fetchWithCookies(jar, url);
+  const html = await res.text();
+  return parseEventDetailsFromHtml(html);
 }
 
 async function loadEventsBatch(
@@ -307,8 +328,11 @@ export async function scrapeEvents(
     const batch = allPartialEvents.slice(i, i + BATCH_SIZE);
     const results = await Promise.all(
       batch.map(async (event) => {
-        const address = await fetchEventAddress(jar, event.url);
-        return { ...event, address };
+        const details = await fetchEventDetails(jar, event.url);
+        const description = [event.description, details.note]
+          .filter((value, index, values) => Boolean(value) && values.indexOf(value) === index)
+          .join(" - ");
+        return { ...event, address: details.address, description };
       }),
     );
     events.push(...results);
@@ -321,4 +345,10 @@ export async function scrapeEvents(
 }
 
 // Export for testing
-export { parseEventsFromHtml, fetchEventAddress, createCookieJar, inferEventYears };
+export {
+  parseEventDetailsFromHtml,
+  parseEventsFromHtml,
+  fetchEventDetails,
+  createCookieJar,
+  inferEventYears,
+};

@@ -1,6 +1,6 @@
 import { describe, test, expect } from "bun:test";
-import { parseEventsFromHtml } from "../src/scraper.js";
-import { MOCK_EVENTS_HTML, MOCK_LOAD_MORE_RESPONSE } from "./mocks.js";
+import { parseEventDetailsFromHtml, parseEventsFromHtml } from "../src/scraper.js";
+import { MOCK_EVENTS_HTML, MOCK_GAME_DETAIL_HTML, MOCK_LOAD_MORE_RESPONSE } from "./mocks.js";
 
 describe("parseEventsFromHtml", () => {
   test("parses initial events from full page HTML", () => {
@@ -70,5 +70,12 @@ describe("parseEventsFromHtml", () => {
     const events = parseEventsFromHtml(MOCK_EVENTS_HTML, 2026);
     expect(events[0]?.url).toBe("https://www.spielerplus.de/training/view?id=10001");
     expect(events[1]?.url).toBe("https://www.spielerplus.de/game/view?id=20001");
+  });
+
+  test("parses detail-page notes for downstream filtering", () => {
+    const details = parseEventDetailsFromHtml(MOCK_GAME_DETAIL_HTML);
+
+    expect(details.address).toBe("Fiktivstraße 7, 04100 Beispielstadt, Deutschland");
+    expect(details.note).toBe("für unser 2. Team");
   });
 });

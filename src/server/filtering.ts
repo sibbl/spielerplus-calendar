@@ -47,7 +47,7 @@ function matchesFilter(event: CalendarEvent, filter: FilteredEndpoint): boolean 
 
   if (filter.nameRegex) {
     const re = new RegExp(filter.nameRegex, "i");
-    const nameField = [event.title, event.subtitle].join(" ");
+    const nameField = [event.title, event.subtitle, event.description].join(" ");
     if (!re.test(nameField)) return false;
   }
 

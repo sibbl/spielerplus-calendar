@@ -260,6 +260,7 @@ export const MOCK_GAME_DETAIL_HTML = `
 <head><title>Do, 17.04.2026</title></head>
 <body>
   <div>Testspiel bei Phantomkicker - Auswärtsspiel</div>
+  <p>„für unser 2. Team“</p>
   <a href="javascript:void(0);">
     <div>
       <h4>Adresse</h4>

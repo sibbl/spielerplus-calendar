@@ -49,16 +49,17 @@ Configuration can be provided via environment variables (`.env`) or a JSON confi
 
 ### Environment Variables
 
-| Variable               | Required | Default               | Description                             |
-| ---------------------- | -------- | --------------------- | --------------------------------------- |
-| `SPIELERPLUS_EMAIL`    | Yes      | —                     | SpielerPlus login email                 |
-| `SPIELERPLUS_PASSWORD` | Yes      | —                     | SpielerPlus login password              |
-| `SPIELERPLUS_TEAM_ID`  | Yes      | —                     | Team/user ID for team selection         |
-| `PORT`                 | No       | `3000`                | HTTP server port                        |
-| `SCHEDULE_CRON`        | No       | `0 */15 * * * *`      | Cron expression (6-field, with seconds) |
-| `CACHE_FILE`           | No       | `./cache/events.json` | File path for persisted cache data      |
-| `FILTERS`              | No       | `[]`                  | JSON array of filtered endpoints        |
-| `CONFIG_FILE`          | No       | `./config.json`       | Path to JSON config file                |
+| Variable               | Required | Default               | Description                                                      |
+| ---------------------- | -------- | --------------------- | ---------------------------------------------------------------- |
+| `SPIELERPLUS_EMAIL`    | Yes      | —                     | SpielerPlus login email                                          |
+| `SPIELERPLUS_PASSWORD` | Yes      | —                     | SpielerPlus login password                                       |
+| `SPIELERPLUS_TEAM_ID`  | Yes      | —                     | Team/user ID for team selection                                  |
+| `PORT`                 | No       | `3000`                | HTTP server port                                                 |
+| `SCHEDULE_CRON`        | No       | `0 */15 * * * *`      | Cron expression (6-field, with seconds)                          |
+| `CACHE_FILE`           | No       | `./cache/events.json` | File path for persisted cache data                               |
+| `ICAL_START_MODE`      | No       | `start`               | Default ICS start source: `start` (`Beginn`) or `meet` (`Treff`) |
+| `FILTERS`              | No       | `[]`                  | JSON array of filtered endpoints                                 |
+| `CONFIG_FILE`          | No       | `./config.json`       | Path to JSON config file                                         |
 
 ### JSON Config File
 
@@ -67,6 +68,7 @@ See [config.example.json](config.example.json) for the full schema. Supports all
 The JSON config also supports:
 
 - `cache.file` — file path for the persisted cache
+- `calendar.startMode` — default ICS start source: `start` (`Beginn`) or `meet` (`Treff`)
 
 ### Filtered Endpoints
 
@@ -97,6 +99,22 @@ You can combine configured filters directly in the feed URL. For example, if you
 
 When at least one custom filter is configured, the server also exposes `/other.ics`. This synthetic feed contains every event that does not match any configured filter. It also appears on the landing page and can be combined with other filters like `/training+other.ics`.
 
+## Start Time Mode
+
+ICS feeds can use either the real event start (`Beginn`) or the meetup time (`Treff`) as `DTSTART`.
+
+- Default behavior is controlled by `ICAL_START_MODE` or `calendar.startMode`.
+- `start` uses `Beginn`.
+- `meet` uses `Treff`, falling back to `Beginn` when no meetup time exists.
+- The landing page lets users switch between both modes.
+- Feed URLs only include a query parameter when the selected mode differs from the configured default.
+
+Examples:
+
+- `/calendar.ics` uses the configured default
+- `/calendar.ics?start=meet` forces `Treff`
+- `/training+other.ics?start=meet` combines filters and forces `Treff`
+
 ## API Endpoints
 
 | Endpoint                       | Description                                        |
@@ -107,6 +125,8 @@ When at least one custom filter is configured, the server also exposes `/other.i
 | `GET /<filter>.ics`            | Filtered iCal feed (as configured)                 |
 | `GET /other.ics`               | Events unmatched by all configured filters         |
 | `GET /<filterA>+<filterB>.ics` | Combined iCal feed with duplicate events removed   |
+
+All ICS endpoints also support `?start=start` and `?start=meet` to override the default start-time mode per request.
 
 ## Reverse Proxy Support
 

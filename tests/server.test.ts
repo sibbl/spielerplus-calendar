@@ -135,7 +135,8 @@ describe("server endpoints", () => {
     expect(body).toContain("cdn.tailwindcss.com");
     expect(body).toContain('value="training"');
     expect(body).toContain('value="games"');
-    expect(body).toContain("Build a clean subscription feed");
+    expect(body).toContain("Build your feed.");
+    expect(body).not.toContain("Proxy-aware URLs supported via forwarded headers");
   });
 
   test("GET / respects forwarded subpath on the landing page", async () => {

@@ -27,28 +27,33 @@ function describeFilter(filter: FilteredEndpoint): string {
     .join(" | ");
 }
 
-function renderFilterCards(filters: ServerFilter[], publicRootUrl: URL): string {
+function renderFilterCards(filters: ServerFilter[]): string {
   if (filters.length === 0) {
     return '<p class="text-sm text-slate-600">No custom filters configured.</p>';
   }
 
   return filters
     .map((filter) => {
-      const filterUrl = buildPublicUrl(publicRootUrl, filter.path);
       const description = describeFilter(filter) || "Matches all events";
 
       return `
-        <label class="group flex cursor-pointer items-start gap-4 rounded-3xl border border-white/60 bg-white/80 p-4 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur transition hover:-translate-y-0.5 hover:border-sky-300 hover:bg-white">
+        <label class="group flex cursor-pointer items-center gap-4 rounded-3xl border border-white/60 bg-white/80 p-4 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur transition hover:-translate-y-0.5 hover:border-sky-300 hover:bg-white">
           <input
             type="checkbox"
             name="filters"
             value="${escapeHtml(filter.token)}"
             class="mt-1 h-5 w-5 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
           />
-          <span class="min-w-0">
+          <span class="flex min-w-0 items-center gap-2">
             <span class="block text-sm font-semibold text-slate-900">${escapeHtml(filter.token)}</span>
-            <span class="mt-1 block text-sm text-slate-600">${escapeHtml(description)}</span>
-            <span class="mt-2 block truncate font-mono text-xs text-slate-500">${escapeHtml(filterUrl)}</span>
+            <span class="relative flex items-center">
+              <span class="flex h-5 w-5 items-center justify-center rounded-full border border-slate-300 text-[11px] font-semibold text-slate-500">
+                i
+              </span>
+              <span class="pointer-events-none absolute left-1/2 top-full z-10 mt-2 hidden w-56 -translate-x-1/2 rounded-2xl bg-slate-950 px-3 py-2 text-xs leading-5 text-slate-100 shadow-lg group-hover:block">
+                ${escapeHtml(description)}
+              </span>
+            </span>
           </span>
         </label>
       `;
@@ -61,5 +66,5 @@ export function renderHomePage(filters: ServerFilter[], publicRootUrl: URL): str
 
   return HOME_PAGE_TEMPLATE.replaceAll("__ROOT_URL__", escapeHtml(publicRootUrl.toString()))
     .replaceAll("__FULL_CALENDAR_URL__", escapeHtml(fullCalendarUrl))
-    .replace("__FILTER_CARDS__", renderFilterCards(filters, publicRootUrl));
+    .replace("__FILTER_CARDS__", renderFilterCards(filters));
 }

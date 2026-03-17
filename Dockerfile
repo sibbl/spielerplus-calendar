@@ -4,7 +4,7 @@ WORKDIR /app
 # Install dependencies
 FROM base AS install
 COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile --production
+RUN bun install --frozen-lockfile --production --ignore-scripts
 
 # Final stage
 FROM base AS release

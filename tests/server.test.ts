@@ -171,8 +171,13 @@ describe("server endpoints", () => {
     expect(body).toContain('value="training"');
     expect(body).toContain('value="games"');
     expect(body).toContain('value="other"');
-    expect(body).toContain("Build your feed.");
-    expect(body).not.toContain("Proxy-aware URLs supported via forwarded headers");
+    expect(body).toContain("Deinen Feed zusammenstellen.");
+    expect(body).toContain("Gesamten Kalender öffnen");
+    expect(body).toContain("Generierte URL");
+    expect(body).toContain("Feed öffnen");
+    expect(body).toContain("URL kopieren");
+    expect(body).toContain("Filter");
+    expect(body).toContain("Terminstart");
     expect(body).toContain('id="apple-link"');
     expect(body).toContain('id="android-link"');
     expect(body).toContain('id="google-link"');

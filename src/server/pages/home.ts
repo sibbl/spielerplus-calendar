@@ -41,13 +41,13 @@ function applyStartMode(url: string, startMode: StartMode, defaultStartMode: Sta
 
 function describeFilter(filter: FilteredEndpoint): string {
   if ("kind" in filter && filter.kind === "other") {
-    return "Matches events not covered by the other filters";
+    return "Entspricht Terminen, die von den anderen Filtern nicht erfasst werden";
   }
 
   return [
-    filter.titleRegex ? `title ${filter.titleRegex}` : null,
-    filter.nameRegex ? `name ${filter.nameRegex}` : null,
-    filter.addressRegex ? `address ${filter.addressRegex}` : null,
+    filter.titleRegex ? `Titel ${filter.titleRegex}` : null,
+    filter.nameRegex ? `Name ${filter.nameRegex}` : null,
+    filter.addressRegex ? `Adresse ${filter.addressRegex}` : null,
   ]
     .filter(Boolean)
     .join(" | ");
@@ -55,12 +55,12 @@ function describeFilter(filter: FilteredEndpoint): string {
 
 function renderFilterCards(filters: ServerFilter[]): string {
   if (filters.length === 0) {
-    return '<p class="text-sm text-slate-600">No custom filters configured.</p>';
+    return '<p class="text-sm text-slate-600">Keine benutzerdefinierten Filter konfiguriert.</p>';
   }
 
   return filters
     .map((filter) => {
-      const description = describeFilter(filter) || "Matches all events";
+      const description = describeFilter(filter) || "Entspricht allen Terminen";
 
       return `
         <label class="group flex cursor-pointer items-center gap-4 rounded-3xl border border-white/60 bg-white/80 p-4 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur transition hover:-translate-y-0.5 hover:border-sky-300 hover:bg-white">

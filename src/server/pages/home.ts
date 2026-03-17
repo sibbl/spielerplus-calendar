@@ -61,6 +61,7 @@ function renderFilterCards(filters: ServerFilter[]): string {
   return filters
     .map((filter) => {
       const description = describeFilter(filter) || "Entspricht allen Terminen";
+      const label = filter.kind === "other" ? "Sonstige" : filter.token;
 
       return `
         <label class="group flex cursor-pointer items-center gap-4 rounded-3xl border border-white/60 bg-white/80 p-4 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur transition hover:-translate-y-0.5 hover:border-sky-300 hover:bg-white">
@@ -71,7 +72,7 @@ function renderFilterCards(filters: ServerFilter[]): string {
             class="mt-1 h-5 w-5 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
           />
           <span class="flex min-w-0 items-center gap-2">
-            <span class="block text-sm font-semibold text-slate-900">${escapeHtml(filter.token)}</span>
+            <span class="block text-sm font-semibold text-slate-900">${escapeHtml(label)}</span>
             <span class="relative flex items-center">
               <span class="flex h-5 w-5 items-center justify-center rounded-full border border-slate-300 text-[11px] font-semibold text-slate-500">
                 i

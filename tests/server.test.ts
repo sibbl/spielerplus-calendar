@@ -171,7 +171,8 @@ describe("server endpoints", () => {
     expect(body).toContain('value="training"');
     expect(body).toContain('value="games"');
     expect(body).toContain('value="other"');
-    expect(body).toContain("Deinen Feed zusammenstellen.");
+    expect(body).toContain("Sonstige");
+    expect(body).toContain("Dein Kalender.");
     expect(body).toContain("Gesamten Kalender öffnen");
     expect(body).toContain("Generierte URL");
     expect(body).toContain("Feed öffnen");

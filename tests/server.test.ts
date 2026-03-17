@@ -137,6 +137,16 @@ describe("server endpoints", () => {
     expect(body).toContain('value="games"');
     expect(body).toContain("Build your feed.");
     expect(body).not.toContain("Proxy-aware URLs supported via forwarded headers");
+    expect(body).toContain('id="apple-link"');
+    expect(body).toContain('id="android-link"');
+    expect(body).toContain('id="google-link"');
+    expect(body).toContain('id="outlook-link"');
+    expect(body).toContain(`href="webcal://localhost:${server.port}/calendar.ics"`);
+    expect(body).toContain(
+      `https://www.google.com/calendar/render?cid=${encodeURIComponent(
+        `webcal://localhost:${server.port}/calendar.ics`,
+      )}`,
+    );
   });
 
   test("GET / respects forwarded subpath on the landing page", async () => {

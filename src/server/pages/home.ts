@@ -17,6 +17,14 @@ function escapeHtml(value: string): string {
     .replaceAll("'", "&#39;");
 }
 
+function toWebcalUrl(url: string): string {
+  return url.replace(/^https?:\/\//, "webcal://");
+}
+
+function toGoogleCalendarUrl(url: string): string {
+  return `https://www.google.com/calendar/render?cid=${encodeURIComponent(toWebcalUrl(url))}`;
+}
+
 function describeFilter(filter: FilteredEndpoint): string {
   return [
     filter.titleRegex ? `title ${filter.titleRegex}` : null,
@@ -63,8 +71,12 @@ function renderFilterCards(filters: ServerFilter[]): string {
 
 export function renderHomePage(filters: ServerFilter[], publicRootUrl: URL): string {
   const fullCalendarUrl = buildPublicUrl(publicRootUrl, "/calendar.ics");
+  const fullCalendarWebcalUrl = toWebcalUrl(fullCalendarUrl);
+  const fullCalendarGoogleUrl = toGoogleCalendarUrl(fullCalendarUrl);
 
   return HOME_PAGE_TEMPLATE.replaceAll("__ROOT_URL__", escapeHtml(publicRootUrl.toString()))
     .replaceAll("__FULL_CALENDAR_URL__", escapeHtml(fullCalendarUrl))
+    .replaceAll("__FULL_CALENDAR_WEBCAL_URL__", escapeHtml(fullCalendarWebcalUrl))
+    .replaceAll("__FULL_CALENDAR_GOOGLE_URL__", escapeHtml(fullCalendarGoogleUrl))
     .replace("__FILTER_CARDS__", renderFilterCards(filters));
 }

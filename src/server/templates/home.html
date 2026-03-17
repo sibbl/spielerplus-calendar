@@ -72,6 +72,36 @@
                 Copy URL
               </button>
             </div>
+            <div class="mt-6 flex flex-wrap gap-2 text-sm">
+              <a
+                id="apple-link"
+                href="__FULL_CALENDAR_WEBCAL_URL__"
+                class="inline-flex items-center rounded-full border border-white/15 px-3 py-2 font-medium text-white/90 transition hover:border-white/30 hover:bg-white/5"
+              >
+                iPhone/iPad
+              </a>
+              <a
+                id="android-link"
+                href="__FULL_CALENDAR_GOOGLE_URL__"
+                class="inline-flex items-center rounded-full border border-white/15 px-3 py-2 font-medium text-white/90 transition hover:border-white/30 hover:bg-white/5"
+              >
+                Android
+              </a>
+              <a
+                id="google-link"
+                href="__FULL_CALENDAR_GOOGLE_URL__"
+                class="inline-flex items-center rounded-full border border-white/15 px-3 py-2 font-medium text-white/90 transition hover:border-white/30 hover:bg-white/5"
+              >
+                Google
+              </a>
+              <a
+                id="outlook-link"
+                href="__FULL_CALENDAR_WEBCAL_URL__"
+                class="inline-flex items-center rounded-full border border-white/15 px-3 py-2 font-medium text-white/90 transition hover:border-white/30 hover:bg-white/5"
+              >
+                Outlook
+              </a>
+            </div>
             <p id="copy-status" class="mt-4 text-sm text-slate-400"></p>
           </div>
         </div>
@@ -95,6 +125,10 @@
       const checkboxes = Array.from(document.querySelectorAll('input[name="filters"]'));
       const urlEl = document.getElementById("generated-url");
       const linkEl = document.getElementById("subscribe-link");
+      const appleLinkEl = document.getElementById("apple-link");
+      const androidLinkEl = document.getElementById("android-link");
+      const googleLinkEl = document.getElementById("google-link");
+      const outlookLinkEl = document.getElementById("outlook-link");
       const copyButton = document.getElementById("copy-button");
       const copyStatus = document.getElementById("copy-status");
 
@@ -103,13 +137,29 @@
         return new URL(basePath + suffix, rootUrl.origin).toString();
       }
 
+      function buildWebcalUrl(url) {
+        return url.replace(/^https?:\/\//, "webcal://");
+      }
+
+      function buildGoogleCalendarUrl(url) {
+        return (
+          "https://www.google.com/calendar/render?cid=" + encodeURIComponent(buildWebcalUrl(url))
+        );
+      }
+
       function updateGeneratedUrl() {
         const selectedTokens = checkboxes
           .filter((checkbox) => checkbox.checked)
           .map((checkbox) => checkbox.value);
         const nextUrl = buildFeedUrl(selectedTokens);
+        const nextWebcalUrl = buildWebcalUrl(nextUrl);
+        const nextGoogleUrl = buildGoogleCalendarUrl(nextUrl);
         urlEl.textContent = nextUrl;
         linkEl.href = nextUrl;
+        appleLinkEl.href = nextWebcalUrl;
+        androidLinkEl.href = nextGoogleUrl;
+        googleLinkEl.href = nextGoogleUrl;
+        outlookLinkEl.href = nextWebcalUrl;
       }
 
       for (const checkbox of checkboxes) {

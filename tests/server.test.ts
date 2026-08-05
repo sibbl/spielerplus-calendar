@@ -280,8 +280,8 @@ describe("server endpoints", () => {
 
     expect(feed).not.toContain("ANTWORT OFFEN");
     expect(home).toContain('data-show-open-response="false"');
-    expect(home).not.toContain("__SHOW_OPEN_RESPONSE_DISABLED__");
-    expect(home).toContain('name="show-open-response"\n                \n                disabled');
+    expect(home).not.toContain('id="show-open-response"');
+    expect(home).not.toContain("ANTWORT OFFEN“ im Titel anzeigen");
   });
 
   test("GET / respects forwarded subpath on the landing page", async () => {

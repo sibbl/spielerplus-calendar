@@ -10,6 +10,21 @@ const HOME_PAGE_TEMPLATE = readFileSync(
   "utf-8",
 );
 
+const OPEN_RESPONSE_OPTION = `
+            <label
+              class="mt-5 flex w-fit cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm font-medium text-slate-700 shadow-sm transition hover:border-sky-300 hover:text-slate-950"
+            >
+              <input
+                id="show-open-response"
+                type="checkbox"
+                name="show-open-response"
+                __SHOW_OPEN_RESPONSE_CHECKED__
+                class="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+              />
+              „ANTWORT OFFEN“ im Titel anzeigen
+            </label>
+`;
+
 function escapeHtml(value: string): string {
   return value
     .replaceAll("&", "&amp;")
@@ -120,8 +135,15 @@ export function renderHomePage(
     .replaceAll("__DEFAULT_START_MODE__", escapeHtml(defaultStartMode))
     .replaceAll("__SELECTED_START_MODE__", escapeHtml(selectedStartMode))
     .replaceAll("__SHOW_OPEN_RESPONSE__", String(showOpenResponse))
-    .replaceAll("__SHOW_OPEN_RESPONSE_CHECKED__", showOpenResponse ? "checked" : "")
-    .replaceAll("__SHOW_OPEN_RESPONSE_DISABLED__", openResponseConfigurable ? "" : "disabled")
+    .replace(
+      "__OPEN_RESPONSE_OPTION__",
+      openResponseConfigurable
+        ? OPEN_RESPONSE_OPTION.replace(
+            "__SHOW_OPEN_RESPONSE_CHECKED__",
+            showOpenResponse ? "checked" : "",
+          )
+        : "",
+    )
     .replaceAll("__FULL_CALENDAR_URL__", escapeHtml(fullCalendarUrl))
     .replaceAll("__FULL_CALENDAR_WEBCAL_URL__", escapeHtml(fullCalendarWebcalUrl))
     .replaceAll("__FULL_CALENDAR_GOOGLE_URL__", escapeHtml(fullCalendarGoogleUrl))

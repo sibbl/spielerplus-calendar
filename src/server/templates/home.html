@@ -81,19 +81,7 @@
                 Treff
               </label>
             </div>
-            <label
-              class="mt-5 flex w-fit cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm font-medium text-slate-700 shadow-sm transition hover:border-sky-300 hover:text-slate-950"
-            >
-              <input
-                id="show-open-response"
-                type="checkbox"
-                name="show-open-response"
-                __SHOW_OPEN_RESPONSE_CHECKED__
-                __SHOW_OPEN_RESPONSE_DISABLED__
-                class="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-              />
-              „ANTWORT OFFEN“ im Titel anzeigen
-            </label>
+            __OPEN_RESPONSE_OPTION__
           </div>
           <div
             class="rounded-[1.75rem] border border-sky-200/60 bg-slate-950 p-6 text-slate-50 shadow-[0_20px_70px_rgba(15,23,42,0.32)]"
@@ -219,7 +207,7 @@
         const nextUrl = buildFeedUrl(
           selectedTokens,
           selectedStartMode,
-          showOpenResponseInput.checked,
+          showOpenResponseInput ? showOpenResponseInput.checked : initialShowOpenResponse,
         );
         const nextWebcalUrl = buildWebcalUrl(nextUrl);
         const nextGoogleUrl = buildGoogleCalendarUrl(nextUrl);
@@ -240,8 +228,10 @@
         input.addEventListener("change", updateGeneratedUrl);
       }
 
-      showOpenResponseInput.checked = initialShowOpenResponse;
-      showOpenResponseInput.addEventListener("change", updateGeneratedUrl);
+      if (showOpenResponseInput) {
+        showOpenResponseInput.checked = initialShowOpenResponse;
+        showOpenResponseInput.addEventListener("change", updateGeneratedUrl);
+      }
 
       copyButton.addEventListener("click", async () => {
         try {

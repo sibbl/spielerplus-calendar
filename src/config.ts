@@ -25,6 +25,7 @@ export interface Config {
   };
   calendar: {
     startMode: "start" | "meet";
+    showOpenResponse: boolean;
   };
   filters: FilteredEndpoint[];
 }
@@ -33,6 +34,13 @@ function loadJsonConfig(filePath: string): Partial<Config> | null {
   if (!existsSync(filePath)) return null;
   const raw = readFileSync(filePath, "utf-8");
   return JSON.parse(raw) as Partial<Config>;
+}
+
+function parseBoolean(value: unknown, defaultValue: boolean): boolean {
+  if (typeof value === "boolean") return value;
+  if (typeof value !== "string") return defaultValue;
+
+  return !["false", "0", "no", "off"].includes(value.trim().toLowerCase());
 }
 
 export function loadConfig(): Config {
@@ -50,6 +58,10 @@ export function loadConfig(): Config {
     join(process.cwd(), "cache", "events.json");
   const startModeRaw = process.env["ICAL_START_MODE"] || jsonConfig?.calendar?.startMode || "start";
   const startMode = startModeRaw === "meet" ? "meet" : "start";
+  const showOpenResponse = parseBoolean(
+    process.env["ICAL_SHOW_OPEN_RESPONSE"] ?? jsonConfig?.calendar?.showOpenResponse,
+    true,
+  );
 
   let filters: FilteredEndpoint[] = jsonConfig?.filters || [];
   if (process.env["FILTERS"]) {
@@ -67,7 +79,7 @@ export function loadConfig(): Config {
     server: { port },
     schedule: { cron },
     cache: { file: cacheFile },
-    calendar: { startMode },
+    calendar: { startMode, showOpenResponse },
     filters,
   };
 }

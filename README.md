@@ -49,17 +49,18 @@ Configuration can be provided via environment variables (`.env`) or a JSON confi
 
 ### Environment Variables
 
-| Variable               | Required | Default               | Description                                                      |
-| ---------------------- | -------- | --------------------- | ---------------------------------------------------------------- |
-| `SPIELERPLUS_EMAIL`    | Yes      | —                     | SpielerPlus login email                                          |
-| `SPIELERPLUS_PASSWORD` | Yes      | —                     | SpielerPlus login password                                       |
-| `SPIELERPLUS_TEAM_ID`  | Yes      | —                     | Team/user ID for team selection                                  |
-| `PORT`                 | No       | `3000`                | HTTP server port                                                 |
-| `SCHEDULE_CRON`        | No       | `0 */15 * * * *`      | Cron expression (6-field, with seconds)                          |
-| `CACHE_FILE`           | No       | `./cache/events.json` | File path for persisted cache data                               |
-| `ICAL_START_MODE`      | No       | `start`               | Default ICS start source: `start` (`Beginn`) or `meet` (`Treff`) |
-| `FILTERS`              | No       | `[]`                  | JSON array of filtered endpoints                                 |
-| `CONFIG_FILE`          | No       | `./config.json`       | Path to JSON config file                                         |
+| Variable                  | Required | Default               | Description                                                      |
+| ------------------------- | -------- | --------------------- | ---------------------------------------------------------------- |
+| `SPIELERPLUS_EMAIL`       | Yes      | —                     | SpielerPlus login email                                          |
+| `SPIELERPLUS_PASSWORD`    | Yes      | —                     | SpielerPlus login password                                       |
+| `SPIELERPLUS_TEAM_ID`     | Yes      | —                     | Team/user ID for team selection                                  |
+| `PORT`                    | No       | `3000`                | HTTP server port                                                 |
+| `SCHEDULE_CRON`           | No       | `0 */15 * * * *`      | Cron expression (6-field, with seconds)                          |
+| `CACHE_FILE`              | No       | `./cache/events.json` | File path for persisted cache data                               |
+| `ICAL_START_MODE`         | No       | `start`               | Default ICS start source: `start` (`Beginn`) or `meet` (`Treff`) |
+| `ICAL_SHOW_OPEN_RESPONSE` | No       | `true`                | Show `ANTWORT OFFEN` for events without a response               |
+| `FILTERS`                 | No       | `[]`                  | JSON array of filtered endpoints                                 |
+| `CONFIG_FILE`             | No       | `./config.json`       | Path to JSON config file                                         |
 
 ### JSON Config File
 
@@ -69,6 +70,7 @@ The JSON config also supports:
 
 - `cache.file` — file path for the persisted cache
 - `calendar.startMode` — default ICS start source: `start` (`Beginn`) or `meet` (`Treff`)
+- `calendar.showOpenResponse` — whether to show `ANTWORT OFFEN` by default (default: `true`)
 
 ### Filtered Endpoints
 
@@ -127,6 +129,10 @@ Examples:
 | `GET /<filterA>+<filterB>.ics` | Combined iCal feed with duplicate events removed   |
 
 All ICS endpoints also support `?start=start` and `?start=meet` to override the default start-time mode per request.
+By default, events without a participation response are prefixed with `ANTWORT OFFEN`. Add
+`?open-response=false` to hide that prefix; the landing page exposes the same option as a checkbox.
+Set `ICAL_SHOW_OPEN_RESPONSE=false` to disable the prefix globally for a team feed. In that mode,
+the UI option is locked off and cannot re-enable it.
 
 ## Reverse Proxy Support
 

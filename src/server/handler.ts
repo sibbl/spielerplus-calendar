@@ -20,6 +20,10 @@ function resolveStartMode(
   return defaultMode;
 }
 
+function resolveShowOpenResponse(value: string | null, configuredValue: boolean): boolean {
+  return configuredValue && value !== "false";
+}
+
 function createCalendarResponse(body: string, fileName: string): Response {
   return new Response(body, {
     headers: {
@@ -39,13 +43,22 @@ export function createServerHandler(config: Config): (req: Request) => Response 
     const pathname = url.pathname;
     const publicRequestUrl = getPublicRequestUrl(req).toString();
     const startMode = resolveStartMode(url.searchParams.get("start"), config.calendar.startMode);
+    const showOpenResponse = resolveShowOpenResponse(
+      url.searchParams.get("open-response"),
+      config.calendar.showOpenResponse,
+    );
 
     if (pathname === "/health") {
       const lastUpdated = getLastUpdated();
+      const eventDates = getCachedEvents()
+        .map((event) => event.date)
+        .sort();
       return Response.json({
         status: "ok",
         lastUpdated: lastUpdated?.toISOString() || null,
         eventCount: getCachedEvents().length,
+        firstEventDate: eventDates[0] ?? null,
+        lastEventDate: eventDates.at(-1) ?? null,
       });
     }
 
@@ -53,6 +66,7 @@ export function createServerHandler(config: Config): (req: Request) => Response 
       const ical = generateICal(getCachedEvents(), {
         calendarUrl: publicRequestUrl,
         startMode,
+        showOpenResponse,
       });
       return createCalendarResponse(ical, "calendar.ics");
     }
@@ -64,6 +78,7 @@ export function createServerHandler(config: Config): (req: Request) => Response 
         calendarName: `SpielerPlus - ${filter.token}`,
         calendarUrl: publicRequestUrl,
         startMode,
+        showOpenResponse,
       });
       return createCalendarResponse(ical, `${filter.token}.ics`);
     }
@@ -88,6 +103,7 @@ export function createServerHandler(config: Config): (req: Request) => Response 
         calendarName: `SpielerPlus - ${uniqueTokens.join(" + ")}`,
         calendarUrl: publicRequestUrl,
         startMode,
+        showOpenResponse,
       });
       return createCalendarResponse(ical, `${uniqueTokens.join("+")}.ics`);
     }
@@ -98,6 +114,8 @@ export function createServerHandler(config: Config): (req: Request) => Response 
         getPublicRequestUrl(req),
         config.calendar.startMode,
         startMode,
+        showOpenResponse,
+        config.calendar.showOpenResponse,
       );
       return new Response(html, {
         headers: { "Content-Type": "text/html; charset=utf-8" },

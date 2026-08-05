@@ -80,6 +80,30 @@ describe("generateICal", () => {
     expect(ical).toContain("Teamfeier");
   });
 
+  test("prefixes summaries with the response status", () => {
+    const ical = generateICal([
+      { ...mockEvents[0]!, response: "Zugesagt" },
+      { ...mockEvents[1]!, response: null },
+    ]);
+
+    expect(ical).toContain("SUMMARY:ZUGESAGT - Training");
+    expect(ical).toContain("SUMMARY:ANTWORT OFFEN - Testspiel bei Phantomkicker");
+  });
+
+  test("can hide the open-response prefix without hiding real responses", () => {
+    const ical = generateICal(
+      [
+        { ...mockEvents[0]!, response: "Zugesagt" },
+        { ...mockEvents[1]!, response: null },
+      ],
+      { showOpenResponse: false },
+    );
+
+    expect(ical).toContain("SUMMARY:ZUGESAGT - Training");
+    expect(ical).toContain("SUMMARY:Testspiel bei Phantomkicker");
+    expect(ical).not.toContain("ANTWORT OFFEN");
+  });
+
   test("includes location for events with addresses", () => {
     const ical = generateICal(mockEvents);
     expect(ical).toContain("Musterweg 42");
@@ -112,6 +136,14 @@ describe("generateICal", () => {
     expect(ical).toContain("DTEND:20260415T204500");
   });
 
+  test("falls back to the event start for an invalid meet time", () => {
+    const ical = generateICal([{ ...mockEvents[0]!, meetTime: "-:-" }], {
+      startMode: "meet",
+    });
+
+    expect(ical).toContain("DTSTART:20260415T191500");
+  });
+
   test("skips events without start time", () => {
     const firstEvent = mockEvents[0];
     expect(firstEvent).toBeDefined();
@@ -126,6 +158,31 @@ describe("generateICal", () => {
     const ical = generateICal(eventsWithNull);
     const eventCount = (ical.match(/BEGIN:VEVENT/g) || []).length;
     expect(eventCount).toBe(0);
+  });
+
+  test("falls back to 90 minutes for an invalid end time", () => {
+    const event = { ...mockEvents[0]!, endTime: "-:-" };
+    const ical = generateICal([event]);
+
+    expect(ical).toContain("DTSTART:20260415T191500");
+    expect(ical).toContain("DTEND:20260415T204500");
+  });
+
+  test("skips events with invalid dates or start times", () => {
+    const ical = generateICal([
+      { ...mockEvents[0]!, date: "2026-02-31" },
+      { ...mockEvents[1]!, startTime: "abgesagt" },
+    ]);
+
+    expect(ical).not.toContain("BEGIN:VEVENT");
+  });
+
+  test("moves an earlier end time to the next day", () => {
+    const event = { ...mockEvents[0]!, startTime: "23:30", endTime: "01:00" };
+    const ical = generateICal([event]);
+
+    expect(ical).toContain("DTSTART:20260415T233000");
+    expect(ical).toContain("DTEND:20260416T010000");
   });
 
   test("includes unique UIDs per event", () => {

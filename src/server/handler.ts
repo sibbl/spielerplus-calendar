@@ -20,8 +20,8 @@ function resolveStartMode(
   return defaultMode;
 }
 
-function resolveShowOpenResponse(value: string | null): boolean {
-  return value !== "false";
+function resolveShowOpenResponse(value: string | null, configuredValue: boolean): boolean {
+  return configuredValue && value !== "false";
 }
 
 function createCalendarResponse(body: string, fileName: string): Response {
@@ -43,7 +43,10 @@ export function createServerHandler(config: Config): (req: Request) => Response 
     const pathname = url.pathname;
     const publicRequestUrl = getPublicRequestUrl(req).toString();
     const startMode = resolveStartMode(url.searchParams.get("start"), config.calendar.startMode);
-    const showOpenResponse = resolveShowOpenResponse(url.searchParams.get("open-response"));
+    const showOpenResponse = resolveShowOpenResponse(
+      url.searchParams.get("open-response"),
+      config.calendar.showOpenResponse,
+    );
 
     if (pathname === "/health") {
       const lastUpdated = getLastUpdated();
@@ -112,6 +115,7 @@ export function createServerHandler(config: Config): (req: Request) => Response 
         config.calendar.startMode,
         startMode,
         showOpenResponse,
+        config.calendar.showOpenResponse,
       );
       return new Response(html, {
         headers: { "Content-Type": "text/html; charset=utf-8" },

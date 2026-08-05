@@ -13,6 +13,10 @@
   "cache": {
     "file": "./cache/events.json"
   },
+  "calendar": {
+    "startMode": "start",
+    "showOpenResponse": true
+  },
   "filters": [
     {
       "path": "/training.ics",

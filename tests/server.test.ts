@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
 import { initializeCache, updateCache } from "../src/cache.js";
-import { startServer } from "../src/server.js";
+import { createServerHandler, startServer } from "../src/server.js";
 import type { CalendarEvent } from "../src/types.js";
 import type { Config } from "../src/config.js";
 
@@ -69,7 +69,7 @@ const testConfig: Config = {
   server: { port: 0 },
   schedule: { cron: "0 0 * * * *" },
   cache: { file: "/tmp/spielerplus-calendar-test-cache.json" },
-  calendar: { startMode: "start" },
+  calendar: { startMode: "start", showOpenResponse: true },
   filters: [
     { path: "/training.ics", titleRegex: "Training" },
     { path: "/games.ics", titleRegex: "spiel" },
@@ -264,6 +264,24 @@ describe("server endpoints", () => {
     expect(body).toContain(
       `href="webcal://localhost:${server.port}/calendar.ics?open-response=false"`,
     );
+  });
+
+  test("global config can disable open responses even when the URL requests them", async () => {
+    const globallyDisabledConfig = {
+      ...testConfig,
+      calendar: { ...testConfig.calendar, showOpenResponse: false },
+    };
+    const handler = createServerHandler(globallyDisabledConfig);
+
+    const feed = await handler(
+      new Request("http://localhost/calendar.ics?open-response=true"),
+    ).text();
+    const home = await handler(new Request("http://localhost/")).text();
+
+    expect(feed).not.toContain("ANTWORT OFFEN");
+    expect(home).toContain('data-show-open-response="false"');
+    expect(home).not.toContain("__SHOW_OPEN_RESPONSE_DISABLED__");
+    expect(home).toContain('name="show-open-response"\n                \n                disabled');
   });
 
   test("GET / respects forwarded subpath on the landing page", async () => {

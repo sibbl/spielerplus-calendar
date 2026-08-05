@@ -10,5 +10,5 @@ export interface CalendarEvent {
   endTime: string | null; // HH:MM
   address: string | null;
   url: string;
-  response: string | null;  
+  response?: string | null;
 }

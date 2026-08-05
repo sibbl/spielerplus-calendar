@@ -9,10 +9,28 @@ interface GenerateICalOptions {
 
 function parseDateTime(date: string, time: string | null): Date | null {
   if (!time) return null;
-  const [hours, minutes] = time.split(":").map(Number);
-  if (hours === undefined || minutes === undefined) return null;
-  const d = new Date(`${date}T00:00:00`);
-  d.setHours(hours, minutes, 0, 0);
+
+  const dateMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  const timeMatch = /^(\d{1,2}):(\d{2})$/.exec(time.trim());
+  if (!dateMatch || !timeMatch) return null;
+
+  const year = Number(dateMatch[1]);
+  const month = Number(dateMatch[2]);
+  const day = Number(dateMatch[3]);
+  const hours = Number(timeMatch[1]);
+  const minutes = Number(timeMatch[2]);
+  if (hours > 23 || minutes > 59) return null;
+
+  const d = new Date(year, month - 1, day, hours, minutes, 0, 0);
+  if (
+    Number.isNaN(d.getTime()) ||
+    d.getFullYear() !== year ||
+    d.getMonth() !== month - 1 ||
+    d.getDate() !== day
+  ) {
+    return null;
+  }
+
   return d;
 }
 
@@ -33,19 +51,22 @@ export function generateICal(
   });
 
   for (const event of events) {
-    const startSource = startMode === "meet" ? event.meetTime || event.startTime : event.startTime;
-    const start = parseDateTime(event.date, startSource);
-    const end = parseDateTime(event.date, event.endTime);
-	console.log(`[ical] Event ${event.title} has end date ${end}`);
+    const eventStart = parseDateTime(event.date, event.startTime);
+    const meetStart = parseDateTime(event.date, event.meetTime);
+    const start = startMode === "meet" ? meetStart || eventStart : eventStart;
+    let end = parseDateTime(event.date, event.endTime);
 
     if (!start) continue;
-	
-	const summaryParts = [event.response.toUpperCase()];
-	
-	if (event.response === "") {
-		summaryParts[0] = "ANTWORT OFFEN";
-	}
-	summaryParts.push(event.title);
+
+    if (!end) {
+      end = new Date(start.getTime() + 90 * 60 * 1000);
+    } else if (end < start) {
+      // SpielerPlus only provides a time, so an earlier end means the event crosses midnight.
+      end.setDate(end.getDate() + 1);
+    }
+
+    const response = event.response?.trim();
+    const summaryParts = [response ? response.toUpperCase() : "ANTWORT OFFEN", event.title];
     if (event.subtitle) summaryParts.push(event.subtitle);
 
     const descriptionParts: string[] = [];
@@ -58,7 +79,7 @@ export function generateICal(
       summary: summaryParts.join(" - "),
       description: descriptionParts.join("\n"),
       start,
-      end: end || new Date(start.getTime() + 90 * 60 * 1000), // Default 90 min
+      end,
       location: event.address || undefined,
       url: event.url || undefined,
     });

@@ -53,7 +53,8 @@ const mockEvents: CalendarEvent[] = [
     date: "2026-07-04",
     meetTime: "17:00",
     startTime: "17:00",
-    endTime: "23:30",
+    // A malformed optional time from an unrelated event must not break the full feed.
+    endTime: "-:-",
     address: "Jahnallee, 04000 Beispielstadt, Deutschland",
     url: "https://www.spielerplus.de/event/view?id=40001",
   },
@@ -90,9 +91,16 @@ afterAll(() => {
 describe("server endpoints", () => {
   test("GET /health returns status", async () => {
     const res = await fetch(`http://localhost:${server.port}/health`);
-    const data = (await res.json()) as { status: string; eventCount: number };
+    const data = (await res.json()) as {
+      status: string;
+      eventCount: number;
+      firstEventDate: string;
+      lastEventDate: string;
+    };
     expect(data.status).toBe("ok");
     expect(data.eventCount).toBe(4);
+    expect(data.firstEventDate).toBe("2026-04-15");
+    expect(data.lastEventDate).toBe("2026-07-04");
   });
 
   test("GET /calendar.ics returns valid iCal", async () => {
@@ -115,19 +123,23 @@ describe("server endpoints", () => {
   test("GET /training.ics returns only training events", async () => {
     const res = await fetch(`http://localhost:${server.port}/training.ics`);
     const body = await res.text();
-    expect(body).toContain("SUMMARY:Training");
-    expect(body).toContain("SUMMARY:Trainingsspiel gegen Phantomkicker - Phantomkicker");
+    expect(body).toContain("SUMMARY:ANTWORT OFFEN - Training");
+    expect(body).toContain(
+      "SUMMARY:ANTWORT OFFEN - Trainingsspiel gegen Phantomkicker - Phantomkicker",
+    );
     expect(body).not.toContain(
-      "SUMMARY:Testspiel bei Phantomkicker (Auswärtsspiel) - Phantomkicker",
+      "SUMMARY:ANTWORT OFFEN - Testspiel bei Phantomkicker (Auswärtsspiel)",
     );
   });
 
   test("GET /games.ics returns only game events", async () => {
     const res = await fetch(`http://localhost:${server.port}/games.ics`);
     const body = await res.text();
-    expect(body).toContain("SUMMARY:Testspiel bei Phantomkicker (Auswärtsspiel) - Phantomkicker");
-    expect(body).toContain("SUMMARY:Trainingsspiel gegen Phantomkicker - Phantomkicker");
-    expect(body).not.toContain("SUMMARY:Training\r\n");
+    expect(body).toContain("SUMMARY:ANTWORT OFFEN - Testspiel bei Phantomkicker (Auswärtsspiel)");
+    expect(body).toContain(
+      "SUMMARY:ANTWORT OFFEN - Trainingsspiel gegen Phantomkicker - Phantomkicker",
+    );
+    expect(body).not.toContain("SUMMARY:ANTWORT OFFEN - Training\r\n");
   });
 
   test("GET /training+games.ics combines filters without duplicates", async () => {
@@ -140,13 +152,18 @@ describe("server endpoints", () => {
     });
     const body = await res.text();
 
-    expect(body).toContain("SUMMARY:Training");
-    expect(body).toContain("SUMMARY:Testspiel bei Phantomkicker (Auswärtsspiel) - Phantomkicker");
-    expect(body).toContain("SUMMARY:Trainingsspiel gegen Phantomkicker - Phantomkicker");
-    expect(body).not.toContain("SUMMARY:Sommerfest");
+    expect(body).toContain("SUMMARY:ANTWORT OFFEN - Training");
+    expect(body).toContain("SUMMARY:ANTWORT OFFEN - Testspiel bei Phantomkicker (Auswärtsspiel)");
+    expect(body).toContain(
+      "SUMMARY:ANTWORT OFFEN - Trainingsspiel gegen Phantomkicker - Phantomkicker",
+    );
+    expect(body).not.toContain("SUMMARY:ANTWORT OFFEN - Sommerfest");
     expect((body.match(/BEGIN:VEVENT/g) || []).length).toBe(3);
     expect(
-      (body.match(/SUMMARY:Trainingsspiel gegen Phantomkicker - Phantomkicker/g) || []).length,
+      (
+        body.match(/SUMMARY:ANTWORT OFFEN - Trainingsspiel gegen Phantomkicker - Phantomkicker/g) ||
+        []
+      ).length,
     ).toBe(1);
     expect(body).toContain("URL:https://calendar.example.com/team/training+games.ics");
   });
@@ -156,13 +173,15 @@ describe("server endpoints", () => {
     const body = await res.text();
 
     // games filter matches both game events
-    expect(body).toContain("SUMMARY:Testspiel bei Phantomkicker (Auswärtsspiel) - Phantomkicker");
-    expect(body).toContain("SUMMARY:Trainingsspiel gegen Phantomkicker - Phantomkicker");
+    expect(body).toContain("SUMMARY:ANTWORT OFFEN - Testspiel bei Phantomkicker (Auswärtsspiel)");
+    expect(body).toContain(
+      "SUMMARY:ANTWORT OFFEN - Trainingsspiel gegen Phantomkicker - Phantomkicker",
+    );
     // other filter must only include events not matched by ANY configured filter (training + games)
     // so Training must NOT appear even though it is not matched by the games filter
-    expect(body).not.toContain("SUMMARY:Training\r\n");
+    expect(body).not.toContain("SUMMARY:ANTWORT OFFEN - Training\r\n");
     // Sommerfest is not matched by any configured filter, so it must appear via "other"
-    expect(body).toContain("SUMMARY:Sommerfest");
+    expect(body).toContain("SUMMARY:ANTWORT OFFEN - Sommerfest");
     expect((body.match(/BEGIN:VEVENT/g) || []).length).toBe(3);
   });
 
@@ -170,10 +189,10 @@ describe("server endpoints", () => {
     const res = await fetch(`http://localhost:${server.port}/other.ics`);
     const body = await res.text();
 
-    expect(body).toContain("SUMMARY:Sommerfest");
-    expect(body).not.toContain("SUMMARY:Training\r\n");
+    expect(body).toContain("SUMMARY:ANTWORT OFFEN - Sommerfest");
+    expect(body).not.toContain("SUMMARY:ANTWORT OFFEN - Training\r\n");
     expect(body).not.toContain(
-      "SUMMARY:Testspiel bei Phantomkicker (Auswärtsspiel) - Phantomkicker",
+      "SUMMARY:ANTWORT OFFEN - Testspiel bei Phantomkicker (Auswärtsspiel)",
     );
     expect((body.match(/BEGIN:VEVENT/g) || []).length).toBe(1);
   });

@@ -127,7 +127,7 @@ function parseEventsFromHtml(html: string, yearHint: number): Omit<CalendarEvent
     const title = $(el).find(".panel-heading-text .panel-title").text().trim();
     const subtitle = $(el).find(".panel-heading-text .panel-subtitle").text().trim();
     const dateStr = $(el).find(".panel-heading-info .panel-subtitle").text().trim(); // "DD.MM"
-	const response = $(el).find(".participation-button.selected").attr("title") || "";
+    const response = $(el).find(".participation-button.selected").attr("title")?.trim() || null;
 
     // Parse times
     let meetTime: string | null = null;
@@ -143,9 +143,8 @@ function parseEventsFromHtml(html: string, yearHint: number): Omit<CalendarEvent
         else if (label === "Beginn") startTime = value || null;
         else if (label === "Ende") endTime = value || null;
       });
-	
-	if (meetTime == "-:-")  meetTime = startTime;
-	if (endTime == "-:-")  endTime = null;
+    if (meetTime === "-:-") meetTime = startTime;
+    if (endTime === "-:-") endTime = null;
     const info = $(el).find(".event-info").text().trim();
 
     // Build URL from link
@@ -158,7 +157,7 @@ function parseEventsFromHtml(html: string, yearHint: number): Omit<CalendarEvent
     const dateISO = `${yearHint}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
 
     const description = [subtitle, info].filter(Boolean).join(" - ");
-	
+
     events.push({
       id: eventId,
       type,
@@ -168,9 +167,9 @@ function parseEventsFromHtml(html: string, yearHint: number): Omit<CalendarEvent
       date: dateISO,
       meetTime,
       startTime,
-      endTime,	  
+      endTime,
       url,
-	  response,
+      response,
     });
   });
 
@@ -181,14 +180,13 @@ function parseEventDetailsFromHtml(html: string): EventDetails {
   const $ = cheerio.load(html);
 
   const addressHeading = $("h4").filter((_i, el) => $(el).text().trim() === "Adresse");
-  let address: string | null = null;  
+  let address: string | null = null;
   if (addressHeading.length > 0) {
     const container = addressHeading.parent();
     const addressText = container
       .contents()
       .filter((_i, el) => el !== addressHeading[0])
-	  .html()
-	  .replace(/<br>/gi," | ").replace(/(<([^>]+)>)/gi, "")
+      .text()
       .trim();
     address = addressText || null;
   }
@@ -344,6 +342,13 @@ export async function scrapeEvents(
   }
 
   const normalizedEvents = inferEventYears(events, now);
+
+  const eventDates = normalizedEvents.map((event) => event.date).sort();
+  const firstDate = eventDates[0];
+  const lastDate = eventDates.at(-1);
+  if (firstDate && lastDate) {
+    console.log(`[scraper] Event date range: ${firstDate} to ${lastDate}.`);
+  }
 
   console.log(`[scraper] Done. ${normalizedEvents.length} events with addresses.`);
   return normalizedEvents;

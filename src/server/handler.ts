@@ -42,10 +42,15 @@ export function createServerHandler(config: Config): (req: Request) => Response 
 
     if (pathname === "/health") {
       const lastUpdated = getLastUpdated();
+      const eventDates = getCachedEvents()
+        .map((event) => event.date)
+        .sort();
       return Response.json({
         status: "ok",
         lastUpdated: lastUpdated?.toISOString() || null,
         eventCount: getCachedEvents().length,
+        firstEventDate: eventDates[0] ?? null,
+        lastEventDate: eventDates.at(-1) ?? null,
       });
     }
 

@@ -72,6 +72,17 @@ describe("parseEventsFromHtml", () => {
     expect(events[1]?.url).toBe("https://www.spielerplus.de/game/view?id=20001");
   });
 
+  test("parses the selected participation response", () => {
+    const html = MOCK_EVENTS_HTML.replace(
+      '<div class="panel-content">',
+      '<button class="participation-button selected" title="Zugesagt"></button><div class="panel-content">',
+    );
+    const events = parseEventsFromHtml(html, 2026);
+
+    expect(events[0]?.response).toBe("Zugesagt");
+    expect(events[1]?.response).toBeNull();
+  });
+
   test("parses detail-page notes for downstream filtering", () => {
     const details = parseEventDetailsFromHtml(MOCK_GAME_DETAIL_HTML);
 

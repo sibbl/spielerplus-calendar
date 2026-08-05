@@ -27,13 +27,24 @@ function toGoogleCalendarUrl(url: string): string {
   return `https://www.google.com/calendar/render?cid=${encodeURIComponent(toWebcalUrl(url))}`;
 }
 
-function applyStartMode(url: string, startMode: StartMode, defaultStartMode: StartMode): string {
+function applyFeedOptions(
+  url: string,
+  startMode: StartMode,
+  defaultStartMode: StartMode,
+  showOpenResponse: boolean,
+): string {
   const nextUrl = new URL(url);
 
   if (startMode !== defaultStartMode) {
     nextUrl.searchParams.set("start", startMode);
   } else {
     nextUrl.searchParams.delete("start");
+  }
+
+  if (!showOpenResponse) {
+    nextUrl.searchParams.set("open-response", "false");
+  } else {
+    nextUrl.searchParams.delete("open-response");
   }
 
   return nextUrl.toString();
@@ -93,11 +104,13 @@ export function renderHomePage(
   publicRootUrl: URL,
   defaultStartMode: StartMode,
   selectedStartMode: StartMode = defaultStartMode,
+  showOpenResponse = true,
 ): string {
-  const fullCalendarUrl = applyStartMode(
+  const fullCalendarUrl = applyFeedOptions(
     buildPublicUrl(publicRootUrl, "/calendar.ics"),
     selectedStartMode,
     defaultStartMode,
+    showOpenResponse,
   );
   const fullCalendarWebcalUrl = toWebcalUrl(fullCalendarUrl);
   const fullCalendarGoogleUrl = toGoogleCalendarUrl(fullCalendarUrl);
@@ -105,6 +118,8 @@ export function renderHomePage(
   return HOME_PAGE_TEMPLATE.replaceAll("__ROOT_URL__", escapeHtml(publicRootUrl.toString()))
     .replaceAll("__DEFAULT_START_MODE__", escapeHtml(defaultStartMode))
     .replaceAll("__SELECTED_START_MODE__", escapeHtml(selectedStartMode))
+    .replaceAll("__SHOW_OPEN_RESPONSE__", String(showOpenResponse))
+    .replaceAll("__SHOW_OPEN_RESPONSE_CHECKED__", showOpenResponse ? "checked" : "")
     .replaceAll("__FULL_CALENDAR_URL__", escapeHtml(fullCalendarUrl))
     .replaceAll("__FULL_CALENDAR_WEBCAL_URL__", escapeHtml(fullCalendarWebcalUrl))
     .replaceAll("__FULL_CALENDAR_GOOGLE_URL__", escapeHtml(fullCalendarGoogleUrl))

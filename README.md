@@ -127,6 +127,8 @@ Examples:
 | `GET /<filterA>+<filterB>.ics` | Combined iCal feed with duplicate events removed   |
 
 All ICS endpoints also support `?start=start` and `?start=meet` to override the default start-time mode per request.
+By default, events without a participation response are prefixed with `ANTWORT OFFEN`. Add
+`?open-response=false` to hide that prefix; the landing page exposes the same option as a checkbox.
 
 ## Reverse Proxy Support
 

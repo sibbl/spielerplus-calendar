@@ -4,6 +4,7 @@
   data-root-url="__ROOT_URL__"
   data-default-start-mode="__DEFAULT_START_MODE__"
   data-selected-start-mode="__SELECTED_START_MODE__"
+  data-show-open-response="__SHOW_OPEN_RESPONSE__"
 >
   <head>
     <meta charset="utf-8" />
@@ -80,6 +81,18 @@
                 Treff
               </label>
             </div>
+            <label
+              class="mt-5 flex w-fit cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm font-medium text-slate-700 shadow-sm transition hover:border-sky-300 hover:text-slate-950"
+            >
+              <input
+                id="show-open-response"
+                type="checkbox"
+                name="show-open-response"
+                __SHOW_OPEN_RESPONSE_CHECKED__
+                class="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+              />
+              „ANTWORT OFFEN“ im Titel anzeigen
+            </label>
           </div>
           <div
             class="rounded-[1.75rem] border border-sky-200/60 bg-slate-950 p-6 text-slate-50 shadow-[0_20px_70px_rgba(15,23,42,0.32)]"
@@ -156,9 +169,11 @@
       const defaultStartMode = document.documentElement.dataset.defaultStartMode || "start";
       const selectedStartMode =
         document.documentElement.dataset.selectedStartMode || defaultStartMode;
+      const initialShowOpenResponse = document.documentElement.dataset.showOpenResponse !== "false";
       const basePath = rootUrl.pathname === "/" ? "" : rootUrl.pathname.replace(/\/$/, "");
       const checkboxes = Array.from(document.querySelectorAll('input[name="filters"]'));
       const startModeInputs = Array.from(document.querySelectorAll('input[name="start-mode"]'));
+      const showOpenResponseInput = document.getElementById("show-open-response");
       const urlEl = document.getElementById("generated-url");
       const linkEl = document.getElementById("subscribe-link");
       const appleLinkEl = document.getElementById("apple-link");
@@ -173,11 +188,14 @@
         return selectedInput ? selectedInput.value : defaultStartMode;
       }
 
-      function buildFeedUrl(tokens, startMode) {
+      function buildFeedUrl(tokens, startMode, showOpenResponse) {
         const suffix = tokens.length ? "/" + tokens.join("+") + ".ics" : "/calendar.ics";
         const feedUrl = new URL(basePath + suffix, rootUrl.origin);
         if (startMode !== defaultStartMode) {
           feedUrl.searchParams.set("start", startMode);
+        }
+        if (!showOpenResponse) {
+          feedUrl.searchParams.set("open-response", "false");
         }
         return feedUrl.toString();
       }
@@ -197,7 +215,11 @@
           .filter((checkbox) => checkbox.checked)
           .map((checkbox) => checkbox.value);
         const selectedStartMode = getSelectedStartMode();
-        const nextUrl = buildFeedUrl(selectedTokens, selectedStartMode);
+        const nextUrl = buildFeedUrl(
+          selectedTokens,
+          selectedStartMode,
+          showOpenResponseInput.checked,
+        );
         const nextWebcalUrl = buildWebcalUrl(nextUrl);
         const nextGoogleUrl = buildGoogleCalendarUrl(nextUrl);
         urlEl.textContent = nextUrl;
@@ -216,6 +238,9 @@
         input.checked = input.value === selectedStartMode;
         input.addEventListener("change", updateGeneratedUrl);
       }
+
+      showOpenResponseInput.checked = initialShowOpenResponse;
+      showOpenResponseInput.addEventListener("change", updateGeneratedUrl);
 
       copyButton.addEventListener("click", async () => {
         try {

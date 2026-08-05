@@ -90,6 +90,20 @@ describe("generateICal", () => {
     expect(ical).toContain("SUMMARY:ANTWORT OFFEN - Testspiel bei Phantomkicker");
   });
 
+  test("can hide the open-response prefix without hiding real responses", () => {
+    const ical = generateICal(
+      [
+        { ...mockEvents[0]!, response: "Zugesagt" },
+        { ...mockEvents[1]!, response: null },
+      ],
+      { showOpenResponse: false },
+    );
+
+    expect(ical).toContain("SUMMARY:ZUGESAGT - Training");
+    expect(ical).toContain("SUMMARY:Testspiel bei Phantomkicker");
+    expect(ical).not.toContain("ANTWORT OFFEN");
+  });
+
   test("includes location for events with addresses", () => {
     const ical = generateICal(mockEvents);
     expect(ical).toContain("Musterweg 42");

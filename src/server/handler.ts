@@ -20,6 +20,10 @@ function resolveStartMode(
   return defaultMode;
 }
 
+function resolveShowOpenResponse(value: string | null): boolean {
+  return value !== "false";
+}
+
 function createCalendarResponse(body: string, fileName: string): Response {
   return new Response(body, {
     headers: {
@@ -39,6 +43,7 @@ export function createServerHandler(config: Config): (req: Request) => Response 
     const pathname = url.pathname;
     const publicRequestUrl = getPublicRequestUrl(req).toString();
     const startMode = resolveStartMode(url.searchParams.get("start"), config.calendar.startMode);
+    const showOpenResponse = resolveShowOpenResponse(url.searchParams.get("open-response"));
 
     if (pathname === "/health") {
       const lastUpdated = getLastUpdated();
@@ -58,6 +63,7 @@ export function createServerHandler(config: Config): (req: Request) => Response 
       const ical = generateICal(getCachedEvents(), {
         calendarUrl: publicRequestUrl,
         startMode,
+        showOpenResponse,
       });
       return createCalendarResponse(ical, "calendar.ics");
     }
@@ -69,6 +75,7 @@ export function createServerHandler(config: Config): (req: Request) => Response 
         calendarName: `SpielerPlus - ${filter.token}`,
         calendarUrl: publicRequestUrl,
         startMode,
+        showOpenResponse,
       });
       return createCalendarResponse(ical, `${filter.token}.ics`);
     }
@@ -93,6 +100,7 @@ export function createServerHandler(config: Config): (req: Request) => Response 
         calendarName: `SpielerPlus - ${uniqueTokens.join(" + ")}`,
         calendarUrl: publicRequestUrl,
         startMode,
+        showOpenResponse,
       });
       return createCalendarResponse(ical, `${uniqueTokens.join("+")}.ics`);
     }
@@ -103,6 +111,7 @@ export function createServerHandler(config: Config): (req: Request) => Response 
         getPublicRequestUrl(req),
         config.calendar.startMode,
         startMode,
+        showOpenResponse,
       );
       return new Response(html, {
         headers: { "Content-Type": "text/html; charset=utf-8" },

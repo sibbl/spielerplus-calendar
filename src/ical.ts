@@ -5,6 +5,7 @@ interface GenerateICalOptions {
   calendarName?: string;
   calendarUrl?: string;
   startMode?: "start" | "meet";
+  showOpenResponse?: boolean;
 }
 
 function parseDateTime(date: string, time: string | null): Date | null {
@@ -41,6 +42,7 @@ export function generateICal(
   const normalizedOptions = typeof options === "string" ? { calendarName: options } : options;
   const calendarName = normalizedOptions.calendarName ?? "SpielerPlus";
   const startMode = normalizedOptions.startMode ?? "start";
+  const showOpenResponse = normalizedOptions.showOpenResponse ?? true;
 
   const calendar = icalGenerator({
     name: calendarName,
@@ -66,7 +68,11 @@ export function generateICal(
     }
 
     const response = event.response?.trim();
-    const summaryParts = [response ? response.toUpperCase() : "ANTWORT OFFEN", event.title];
+    const summaryParts = response
+      ? [response.toUpperCase(), event.title]
+      : showOpenResponse
+        ? ["ANTWORT OFFEN", event.title]
+        : [event.title];
     if (event.subtitle) summaryParts.push(event.subtitle);
 
     const descriptionParts: string[] = [];

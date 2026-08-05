@@ -120,6 +120,14 @@ describe("server endpoints", () => {
     expect(body).not.toContain("DTSTART:20260415T191500");
   });
 
+  test("GET /calendar.ics can hide open-response prefixes", async () => {
+    const res = await fetch(`http://localhost:${server.port}/calendar.ics?open-response=false`);
+    const body = await res.text();
+
+    expect(body).toContain("SUMMARY:Training\r\n");
+    expect(body).not.toContain("ANTWORT OFFEN");
+  });
+
   test("GET /training.ics returns only training events", async () => {
     const res = await fetch(`http://localhost:${server.port}/training.ics`);
     const body = await res.text();
@@ -222,6 +230,10 @@ describe("server endpoints", () => {
     expect(body).toContain('value="meet"');
     expect(body).toContain('data-default-start-mode="start"');
     expect(body).toContain('data-selected-start-mode="start"');
+    expect(body).toContain('data-show-open-response="true"');
+    expect(body).toContain('id="show-open-response"\n                type="checkbox"');
+    expect(body).toContain('name="show-open-response"\n                checked');
+    expect(body).toContain("„ANTWORT OFFEN“ im Titel anzeigen");
     expect(body).toContain(`href="webcal://localhost:${server.port}/calendar.ics"`);
     expect(body).toContain(
       `https://www.google.com/calendar/render?cid=${encodeURIComponent(
@@ -238,6 +250,20 @@ describe("server endpoints", () => {
     expect(body).toContain('data-selected-start-mode="meet"');
     expect(body).toContain(`href="http://localhost:${server.port}/calendar.ics?start=meet"`);
     expect(body).toContain(`href="webcal://localhost:${server.port}/calendar.ics?start=meet"`);
+  });
+
+  test("GET /?open-response=false disables the option in generated links", async () => {
+    const res = await fetch(`http://localhost:${server.port}/?open-response=false`);
+    const body = await res.text();
+
+    expect(body).toContain('data-show-open-response="false"');
+    expect(body).toContain('name="show-open-response"\n                \n');
+    expect(body).toContain(
+      `href="http://localhost:${server.port}/calendar.ics?open-response=false"`,
+    );
+    expect(body).toContain(
+      `href="webcal://localhost:${server.port}/calendar.ics?open-response=false"`,
+    );
   });
 
   test("GET / respects forwarded subpath on the landing page", async () => {

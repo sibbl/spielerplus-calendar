@@ -104,6 +104,21 @@ describe("generateICal", () => {
     expect(ical).not.toContain("ANTWORT OFFEN");
   });
 
+  test("can hide all response prefixes", () => {
+    const ical = generateICal(
+      [
+        { ...mockEvents[0]!, response: "Absagen / Abwesend" },
+        { ...mockEvents[1]!, response: null },
+      ],
+      { showResponses: false },
+    );
+
+    expect(ical).toContain("SUMMARY:Training\r\n");
+    expect(ical).toContain("SUMMARY:Testspiel bei Phantomkicker");
+    expect(ical).not.toContain("ABSAGEN / ABWESEND");
+    expect(ical).not.toContain("ANTWORT OFFEN");
+  });
+
   test("includes location for events with addresses", () => {
     const ical = generateICal(mockEvents);
     expect(ical).toContain("Musterweg 42");

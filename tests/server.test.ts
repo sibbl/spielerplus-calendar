@@ -69,7 +69,7 @@ const testConfig: Config = {
   server: { port: 0 },
   schedule: { cron: "0 0 * * * *" },
   cache: { file: "/tmp/spielerplus-calendar-test-cache.json" },
-  calendar: { startMode: "start", showOpenResponse: true },
+  calendar: { startMode: "start", showResponses: true },
   filters: [
     { path: "/training.ics", titleRegex: "Training" },
     { path: "/games.ics", titleRegex: "spiel" },
@@ -266,22 +266,29 @@ describe("server endpoints", () => {
     );
   });
 
-  test("global config can disable open responses even when the URL requests them", async () => {
+  test("global config can disable all responses even when the URL requests open responses", async () => {
     const globallyDisabledConfig = {
       ...testConfig,
-      calendar: { ...testConfig.calendar, showOpenResponse: false },
+      calendar: { ...testConfig.calendar, showResponses: false },
     };
     const handler = createServerHandler(globallyDisabledConfig);
 
-    const feed = await handler(
-      new Request("http://localhost/calendar.ics?open-response=true"),
-    ).text();
-    const home = await handler(new Request("http://localhost/")).text();
+    updateCache([{ ...mockEvents[0]!, response: "Absagen / Abwesend" }, ...mockEvents.slice(1)]);
+    try {
+      const feed = await handler(
+        new Request("http://localhost/calendar.ics?open-response=true"),
+      ).text();
+      const home = await handler(new Request("http://localhost/")).text();
 
-    expect(feed).not.toContain("ANTWORT OFFEN");
-    expect(home).toContain('data-show-open-response="false"');
-    expect(home).not.toContain('id="show-open-response"');
-    expect(home).not.toContain("ANTWORT OFFEN“ im Titel anzeigen");
+      expect(feed).toContain("SUMMARY:Training\r\n");
+      expect(feed).not.toContain("ABSAGEN / ABWESEND");
+      expect(feed).not.toContain("ANTWORT OFFEN");
+      expect(home).toContain('data-show-open-response="false"');
+      expect(home).not.toContain('id="show-open-response"');
+      expect(home).not.toContain("ANTWORT OFFEN“ im Titel anzeigen");
+    } finally {
+      updateCache(mockEvents);
+    }
   });
 
   test("GET / respects forwarded subpath on the landing page", async () => {

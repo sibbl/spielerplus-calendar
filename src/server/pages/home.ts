@@ -120,7 +120,7 @@ export function renderHomePage(
   defaultStartMode: StartMode,
   selectedStartMode: StartMode = defaultStartMode,
   showOpenResponse = true,
-  openResponseConfigurable = true,
+  responsesEnabled = true,
 ): string {
   const fullCalendarUrl = applyFeedOptions(
     buildPublicUrl(publicRootUrl, "/calendar.ics"),
@@ -137,7 +137,7 @@ export function renderHomePage(
     .replaceAll("__SHOW_OPEN_RESPONSE__", String(showOpenResponse))
     .replace(
       "__OPEN_RESPONSE_OPTION__",
-      openResponseConfigurable
+      responsesEnabled
         ? OPEN_RESPONSE_OPTION.replace(
             "__SHOW_OPEN_RESPONSE_CHECKED__",
             showOpenResponse ? "checked" : "",

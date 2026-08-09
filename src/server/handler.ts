@@ -20,8 +20,8 @@ function resolveStartMode(
   return defaultMode;
 }
 
-function resolveShowOpenResponse(value: string | null, configuredValue: boolean): boolean {
-  return configuredValue && value !== "false";
+function resolveShowOpenResponse(value: string | null, showResponses: boolean): boolean {
+  return showResponses && value !== "false";
 }
 
 function createCalendarResponse(body: string, fileName: string): Response {
@@ -45,7 +45,7 @@ export function createServerHandler(config: Config): (req: Request) => Response 
     const startMode = resolveStartMode(url.searchParams.get("start"), config.calendar.startMode);
     const showOpenResponse = resolveShowOpenResponse(
       url.searchParams.get("open-response"),
-      config.calendar.showOpenResponse,
+      config.calendar.showResponses,
     );
 
     if (pathname === "/health") {
@@ -66,6 +66,7 @@ export function createServerHandler(config: Config): (req: Request) => Response 
       const ical = generateICal(getCachedEvents(), {
         calendarUrl: publicRequestUrl,
         startMode,
+        showResponses: config.calendar.showResponses,
         showOpenResponse,
       });
       return createCalendarResponse(ical, "calendar.ics");
@@ -78,6 +79,7 @@ export function createServerHandler(config: Config): (req: Request) => Response 
         calendarName: `SpielerPlus - ${filter.token}`,
         calendarUrl: publicRequestUrl,
         startMode,
+        showResponses: config.calendar.showResponses,
         showOpenResponse,
       });
       return createCalendarResponse(ical, `${filter.token}.ics`);
@@ -103,6 +105,7 @@ export function createServerHandler(config: Config): (req: Request) => Response 
         calendarName: `SpielerPlus - ${uniqueTokens.join(" + ")}`,
         calendarUrl: publicRequestUrl,
         startMode,
+        showResponses: config.calendar.showResponses,
         showOpenResponse,
       });
       return createCalendarResponse(ical, `${uniqueTokens.join("+")}.ics`);
@@ -115,7 +118,7 @@ export function createServerHandler(config: Config): (req: Request) => Response 
         config.calendar.startMode,
         startMode,
         showOpenResponse,
-        config.calendar.showOpenResponse,
+        config.calendar.showResponses,
       );
       return new Response(html, {
         headers: { "Content-Type": "text/html; charset=utf-8" },

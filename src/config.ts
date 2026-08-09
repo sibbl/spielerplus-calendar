@@ -25,7 +25,7 @@ export interface Config {
   };
   calendar: {
     startMode: "start" | "meet";
-    showOpenResponse: boolean;
+    showResponses: boolean;
   };
   filters: FilteredEndpoint[];
 }
@@ -58,8 +58,8 @@ export function loadConfig(): Config {
     join(process.cwd(), "cache", "events.json");
   const startModeRaw = process.env["ICAL_START_MODE"] || jsonConfig?.calendar?.startMode || "start";
   const startMode = startModeRaw === "meet" ? "meet" : "start";
-  const showOpenResponse = parseBoolean(
-    process.env["ICAL_SHOW_OPEN_RESPONSE"] ?? jsonConfig?.calendar?.showOpenResponse,
+  const showResponses = parseBoolean(
+    process.env["ICAL_SHOW_RESPONSES"] ?? jsonConfig?.calendar?.showResponses,
     true,
   );
 
@@ -79,7 +79,7 @@ export function loadConfig(): Config {
     server: { port },
     schedule: { cron },
     cache: { file: cacheFile },
-    calendar: { startMode, showOpenResponse },
+    calendar: { startMode, showResponses },
     filters,
   };
 }
